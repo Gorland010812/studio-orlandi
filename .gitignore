@@ -6,4 +6,6 @@ venv/
 .venv/
 data/studio_orlandi.db
 *.db
+*.db-shm
+*.db-wal
 .DS_Store
