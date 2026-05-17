@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home — Studio Orlandi</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    .home-body { min-height:100vh; background:var(--grigio-bg); }
+    .home-content { padding:2rem 1.5rem; max-width:960px; margin:0 auto; }
+    .welcome-banner {
+      background:linear-gradient(135deg,var(--verde-scuro),var(--verde));
+      color:#fff; border-radius:var(--radius); padding:1.5rem 2rem;
+      margin-bottom:2rem; display:flex; align-items:center; justify-content:space-between;
+    }
+    .welcome-banner h2 { font-size:1.25rem; margin-bottom:.25rem; }
+    .welcome-banner p  { font-size:.88rem; opacity:.85; }
+    .modulo-card[data-col="verde"]   { border-top-color: var(--verde); }
+    .modulo-card[data-col="teal"]    { border-top-color: var(--teal); }
+    .modulo-card[data-col="giallo"]  { border-top-color: var(--giallo); }
+    .modulo-card[data-col="rosso"]   { border-top-color: var(--rosso); }
+    .modulo-card[data-col="viola"]   { border-top-color: #8e44ad; }
+    .modulo-card[data-col="arancio"] { border-top-color: #e67e22; }
+    .section-title { font-size:1.05rem; font-weight:600; color:#555; margin-bottom:1rem; text-transform:uppercase; letter-spacing:.05em; font-size:.8rem; }
+    .oggi-strip { background:#fff; border-radius:var(--radius); padding:1rem 1.5rem; margin-bottom:1.5rem;
+                  box-shadow:var(--ombra); display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .oggi-label { font-size:.85rem; color:#888; }
+    .oggi-count { font-size:1.6rem; font-weight:700; color:var(--verde); }
+  </style>
+</head>
+<body class="home-body">
+
+  <header class="site-header">
+    <div>
+      <h1>Studio Orlandi</h1>
+      <div class="subtitle" id="nome-medico-header"></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="window.location.href='/medico/calendario.html'">📅 Calendario</button>
+      <button class="btn btn-secondary btn-sm" id="btn-logout">Esci</button>
+    </div>
+  </header>
+
+  <div class="home-content">
+    <div class="welcome-banner">
+      <div>
+        <h2>Benvenuto, <span id="welcome-name">Dottore</span></h2>
+        <p id="data-oggi"></p>
+      </div>
+      <span style="font-size:2.5rem">🩺</span>
+    </div>
+
+    <div class="oggi-strip">
+      <div>
+        <div class="oggi-label">Appuntamenti oggi</div>
+        <div class="oggi-count" id="count-oggi">—</div>
+      </div>
+      <div style="border-left:1px solid var(--grigio-bordo);padding-left:1rem">
+        <div class="oggi-label">Questo mese</div>
+        <div class="oggi-count" id="count-mese">—</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="window.location.href='/medico/calendario.html'">Vedi calendario →</button>
+    </div>
+
+    <div class="section-title">Moduli</div>
+    <div class="moduli-grid">
+      <a href="/medico/anagrafica.html" class="modulo-card" data-col="verde">
+        <div class="m-icon">👥</div><h3>Anagrafica</h3>
+      </a>
+      <a href="/medico/calendario.html" class="modulo-card" data-col="teal">
+        <div class="m-icon">📅</div><h3>Appuntamenti</h3>
+      </a>
+      <a href="#" class="modulo-card" data-col="rosso" title="Prossimamente">
+        <div class="m-icon">❤️</div><h3>Cardiologia</h3>
+      </a>
+      <a href="#" class="modulo-card" data-col="arancio" title="Prossimamente">
+        <div class="m-icon">🏃</div><h3>Medicina Sport</h3>
+      </a>
+      <a href="#" class="modulo-card" data-col="giallo" title="Prossimamente">
+        <div class="m-icon">🧾</div><h3>Ricevute</h3>
+      </a>
+      <a href="/medico/impostazioni.html" class="modulo-card" data-col="viola">
+        <div class="m-icon">⚙️</div><h3>Impostazioni</h3>
+      </a>
+    </div>
+  </div>
+
+  <script src="/assets/app.js"></script>
+  <script>
+    if (!requireAuth()) throw '';
+
+    const oggi = new Date();
+    document.getElementById('data-oggi').textContent =
+      oggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      clearToken(); window.location.href = '/';
+    });
+
+    (async () => {
+      try {
+        const me = await api('/api/auth/me');
+        document.getElementById('nome-medico-header').textContent = me.nome_medico;
+        document.getElementById('welcome-name').textContent = me.nome_medico.replace('Dott. ','').replace('Dott.ssa ','');
+      } catch(e) {}
+
+      // Contatori
+      try {
+        const anno = oggi.getFullYear(), mese = oggi.getMonth() + 1;
+        const app = await api(`/api/appuntamenti/mese/${anno}/${mese}`);
+        document.getElementById('count-mese').textContent = app.length;
+        const oggiStr = oggi.toISOString().slice(0,10);
+        document.getElementById('count-oggi').textContent =
+          app.filter(a => a.data_ora.startsWith(oggiStr)).length;
+      } catch(e) {}
+    })();
+  </script>
+</body>
+</html>

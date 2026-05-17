@@ -1,0 +1,438 @@
+# Specifiche Progetto — Studio Medico Orlandi
+## Documento di riferimento per Claude Code
+
+---
+
+## 1. PANORAMICA DEL PROGETTO
+
+Applicazione web completa per la gestione di uno studio medico.
+Composta da due aree distinte:
+- **Area Medico** — gestione pazienti, appuntamenti, impostazioni (accesso con password)
+- **Portale Pazienti** — prenotazione autonoma appuntamenti (accesso libero, senza login)
+
+### Stack tecnologico
+- **Backend:** Python 3.11+ con FastAPI
+- **Database:** SQLite (file locale sul NAS)
+- **Frontend:** HTML + CSS + JavaScript (no framework, file statici serviti da FastAPI)
+- **Autenticazione:** JWT token per area medico
+- **Deployment:** Docker container su NAS Ugreen 2800
+- **Accesso esterno medico:** Tailscale VPN (già configurata)
+- **Accesso esterno pazienti:** porta pubblica per portale prenotazioni
+
+---
+
+## 2. STRUTTURA DEL PROGETTO
+
+```
+studio-orlandi/
+├── backend/
+│   ├── main.py                 # Entry point FastAPI
+│   ├── database.py             # Connessione SQLite
+│   ├── models.py               # Modelli database
+│   ├── routers/
+│   │   ├── auth.py             # Login / JWT
+│   │   ├── pazienti.py         # CRUD pazienti
+│   │   ├── appuntamenti.py     # CRUD appuntamenti
+│   │   ├── impostazioni.py     # Impostazioni studio
+│   │   └── prenotazioni.py     # Portale pazienti pubblico
+│   └── requirements.txt
+├── frontend/
+│   ├── index.html              # Entry point (scelta medico/paziente)
+│   ├── medico/
+│   │   ├── login.html
+│   │   ├── home.html
+│   │   ├── anagrafica.html
+│   │   ├── calendario.html
+│   │   └── impostazioni.html
+│   ├── paziente/
+│   │   └── prenota.html        # Wizard prenotazione 4 step
+│   └── assets/
+│       ├── style.css
+│       └── app.js
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── data/
+│   └── studio_orlandi.db       # Database SQLite
+└── README.md
+```
+
+---
+
+## 3. DATABASE — SCHEMA SQLITE
+
+### Tabella: impostazioni
+```sql
+CREATE TABLE impostazioni (
+    id INTEGER PRIMARY KEY,
+    nome_medico TEXT NOT NULL DEFAULT 'Dott. Goffredo Orlandi',
+    specializzazioni TEXT DEFAULT '— Diagnostica — Idoneità',
+    servizi TEXT DEFAULT '— Elettrocardiogramma\n— Eco Cuore\n— Holter Cardiaco',
+    testo_home TEXT DEFAULT 'Calendario Appuntamenti: Cardio e idoneità',
+    username TEXT NOT NULL DEFAULT 'orlandi',
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Tabella: sedi
+```sql
+CREATE TABLE sedi (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    indirizzo TEXT,
+    citta TEXT,
+    provincia TEXT,
+    cap TEXT,
+    telefono TEXT,
+    email TEXT,
+    ordine INTEGER DEFAULT 0,
+    attiva BOOLEAN DEFAULT 1
+);
+```
+
+### Tabella: pazienti
+```sql
+CREATE TABLE pazienti (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cognome TEXT NOT NULL,
+    nome TEXT NOT NULL,
+    data_nascita DATE,
+    luogo_nascita TEXT,
+    provincia_nascita TEXT,
+    codice_comune_nascita TEXT,        -- Codice ISTAT per calcolo CF
+    codice_fiscale TEXT,
+    sesso TEXT CHECK(sesso IN ('M', 'F')),
+    indirizzo TEXT,
+    cap TEXT,
+    citta_residenza TEXT,
+    provincia_residenza TEXT,
+    telefono TEXT,
+    email TEXT,
+    professione TEXT,
+    medico_base TEXT,
+    titolo_studio TEXT,
+    stato_civile TEXT,
+    inviato_da TEXT,
+    note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Tabella: tipi_visita
+```sql
+CREATE TABLE tipi_visita (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    durata_minuti INTEGER DEFAULT 30,
+    colore TEXT DEFAULT '#0F6E56',
+    attivo BOOLEAN DEFAULT 1,
+    ordine INTEGER DEFAULT 0
+);
+```
+
+### Tabella: disponibilita
+```sql
+CREATE TABLE disponibilita (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    giorno_settimana INTEGER NOT NULL,  -- 0=Lunedì, 6=Domenica
+    ora_inizio_mattina TEXT DEFAULT '08:30',
+    ora_fine_mattina TEXT DEFAULT '13:00',
+    ora_inizio_pomeriggio TEXT DEFAULT '15:30',
+    ora_fine_pomeriggio TEXT DEFAULT '19:00',
+    attivo BOOLEAN DEFAULT 1
+);
+```
+
+### Tabella: appuntamenti
+```sql
+CREATE TABLE appuntamenti (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paziente_id INTEGER REFERENCES pazienti(id),
+    tipo_visita_id INTEGER REFERENCES tipi_visita(id),
+    sede_id INTEGER REFERENCES sedi(id),
+    data_ora TIMESTAMP NOT NULL,
+    durata_minuti INTEGER DEFAULT 30,
+    stato TEXT DEFAULT 'confermato' CHECK(stato IN ('confermato', 'annullato', 'completato', 'in_attesa')),
+    note TEXT,
+    -- Campi per prenotazioni autonome (paziente non registrato)
+    nome_paziente TEXT,
+    cognome_paziente TEXT,
+    telefono_paziente TEXT,
+    email_paziente TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Tabella: comuni_italiani
+```sql
+CREATE TABLE comuni_italiani (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    provincia TEXT NOT NULL,
+    sigla_provincia TEXT NOT NULL,
+    codice_istat TEXT NOT NULL,        -- Codice belfiore per CF
+    cap TEXT,
+    regione TEXT
+);
+-- Indice per ricerca veloce
+CREATE INDEX idx_comuni_nome ON comuni_italiani(nome);
+CREATE INDEX idx_comuni_provincia ON comuni_italiani(sigla_provincia);
+```
+
+---
+
+## 4. API BACKEND — ENDPOINTS FASTAPI
+
+### Auth
+```
+POST /api/auth/login          → {username, password} → JWT token
+POST /api/auth/change-password → cambia password
+GET  /api/auth/me             → info utente corrente
+```
+
+### Impostazioni (protette da JWT)
+```
+GET  /api/impostazioni        → legge tutte le impostazioni
+PUT  /api/impostazioni        → aggiorna impostazioni studio
+GET  /api/sedi                → lista sedi
+POST /api/sedi                → crea sede
+PUT  /api/sedi/{id}           → modifica sede
+DELETE /api/sedi/{id}         → elimina sede
+```
+
+### Pazienti (protette da JWT)
+```
+GET  /api/pazienti            → lista pazienti (con ricerca)
+GET  /api/pazienti/{id}       → dettaglio paziente
+POST /api/pazienti            → crea paziente
+PUT  /api/pazienti/{id}       → modifica paziente
+DELETE /api/pazienti/{id}     → elimina paziente
+GET  /api/pazienti/cerca      → ricerca per nome/cognome (anti-duplicati)
+```
+
+### Appuntamenti (protette da JWT)
+```
+GET  /api/appuntamenti        → lista appuntamenti (con filtri data)
+GET  /api/appuntamenti/{id}   → dettaglio
+POST /api/appuntamenti        → crea appuntamento
+PUT  /api/appuntamenti/{id}   → modifica
+DELETE /api/appuntamenti/{id} → elimina/annulla
+GET  /api/appuntamenti/mese/{anno}/{mese} → appuntamenti del mese
+```
+
+### Tipi visita (protette da JWT)
+```
+GET  /api/tipi-visita         → lista tipi visita
+POST /api/tipi-visita         → crea tipo visita
+PUT  /api/tipi-visita/{id}    → modifica
+DELETE /api/tipi-visita/{id}  → elimina
+```
+
+### Disponibilità (protette da JWT)
+```
+GET  /api/disponibilita       → legge disponibilità settimanale
+PUT  /api/disponibilita       → aggiorna disponibilità
+```
+
+### Comuni (pubblica)
+```
+GET  /api/comuni/province     → lista province italiane
+GET  /api/comuni/{sigla}      → comuni di una provincia
+GET  /api/comuni/cerca/{nome} → cerca comune per nome
+```
+
+### Portale Prenotazioni (pubblica — no JWT)
+```
+GET  /api/prenota/tipi-visita     → tipi visita disponibili
+GET  /api/prenota/slot-liberi     → slot disponibili per tipo visita
+POST /api/prenota/richiesta       → invia richiesta prenotazione
+GET  /api/prenota/info-studio     → nome medico, sedi, contatti
+GET  /api/prenota/cerca-paziente  → cerca paziente per autocompletamento
+```
+
+---
+
+## 5. FUNZIONALITÀ PRINCIPALI
+
+### 5.1 Calcolo Codice Fiscale
+Implementare la funzione di calcolo CF sia in Python (backend) che in JavaScript (frontend):
+- Codifica cognome (3 consonanti, poi vocali, poi X)
+- Codifica nome (se 4+ consonanti: 1a, 3a, 4a; altrimenti consonanti + vocali)
+- Anno nascita (ultime 2 cifre)
+- Mese nascita (lettera da tabella: A B C D E H L M P R S T)
+- Giorno nascita (M: giorno; F: giorno + 40)
+- Codice comune (codice belfiore da database ISTAT)
+- Carattere di controllo (algoritmo standard)
+
+### 5.2 Controllo Duplicati Pazienti
+- Al momento della creazione, cercare pazienti con stesso cognome+nome
+- Al momento della prenotazione autonoma, cercare per nome+cognome
+- Avvisare l'utente ma non bloccare (potrebbe essere omonimo)
+
+### 5.3 Gestione Slot Appuntamenti
+- Calcolare slot liberi in base a:
+  - Giorni di disponibilità impostati dal medico
+  - Orari mattina/pomeriggio
+  - Durata del tipo di visita selezionato
+  - Appuntamenti già esistenti (non sovrapporre)
+- Mostrare almeno 5 giorni lavorativi futuri con slot disponibili
+
+### 5.4 Comuni Italiani
+- Importare il CSV ISTAT completo dei comuni italiani (8000+ comuni)
+- Cascata Provincia → Comune
+- Se comune non trovato → campo testo libero
+- Usare il codice belfiore per il calcolo CF
+
+---
+
+## 6. INTERFACCIA GRAFICA
+
+### Palette colori
+- Verde principale: #0F6E56
+- Verde scuro: #0a4a38
+- Giallo accento: #F5C842
+- Rosso azioni: #C0392B
+- Sfondo teal: #1A6A8A
+- Verde chiaro: #E1F5EE
+
+### Stile generale
+- Font: -apple-system, system-ui, sans-serif
+- Border radius: 8-12px per card, 6px per input
+- Responsive — funziona su desktop e mobile
+- Nessun framework CSS esterno (solo CSS puro)
+
+### Schermata iniziale (index.html)
+- Header verde con nome medico, specializzazioni, servizi
+- Due card: "Medico" (accesso con password) e "Paziente" (prenotazione libera)
+
+### Area Medico
+**Login:**
+- Prima volta: setup username + password
+- Volte successive: login con credenziali
+
+**Home medico:**
+- Griglia di moduli: Anagrafica, Appuntamenti, Cardiologia, Medicina Sport, Ricevute, Contabilità
+
+**Anagrafica pazienti:**
+- Lista pazienti con ricerca
+- Scheda paziente con tutti i campi
+- Calcolo CF automatico
+- Tab laterali: Anagrafica, Visite, Clinica, Ricevute, Contatti, Informazioni
+- Navigazione tra pazienti (frecce avanti/indietro)
+- Controllo duplicati in tempo reale
+
+**Calendario appuntamenti:**
+- Vista mensile con navigazione
+- Click su giorno per aggiungere appuntamento
+- Appuntamenti colorati per tipo visita
+- Contatore appuntamenti del mese
+
+**Impostazioni (4 tab):**
+1. Intestazione: nome medico, specializzazioni, servizi, testo home
+2. Contatti: sedi ambulatoriali (nome, indirizzo, città, tel, email) — più sedi possibili
+3. Agenda: giorni disponibilità, orari mattina/pomeriggio, tipologie visita
+4. Password: cambio password con verifica
+
+### Portale Pazienti (prenota.html)
+Wizard a 4 step:
+1. **Tipo visita** — card cliccabili con nome e durata
+2. **Data e ora** — slot liberi organizzati per giorno
+3. **Dati personali** — nome, cognome, data nascita, sesso, comune nascita (cascata provincia→comune), CF calcolato automaticamente, residenza, telefono, email, note
+4. **Conferma** — riepilogo completo + checkbox privacy GDPR obbligatorio
+
+Funzionalità extra portale:
+- Autocompletamento dati se paziente già in archivio (cerca per nome+cognome)
+- Comune non in lista → campo testo libero
+- Contatti studio visibili in fondo
+
+---
+
+## 7. SICUREZZA
+
+- Password hashata con bcrypt
+- JWT token con scadenza 8 ore
+- CORS configurato: area medico solo da localhost e Tailscale, portale pazienti aperto
+- Input sanitizzati (prevenzione SQL injection tramite SQLAlchemy ORM)
+- Rate limiting sul portale prenotazioni (max 10 richieste/ora per IP)
+
+---
+
+## 8. DOCKER — CONFIGURAZIONE NAS
+
+### Dockerfile
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY backend/requirements.txt .
+RUN pip install -r requirements.txt
+COPY backend/ .
+COPY frontend/ ./frontend/
+EXPOSE 8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+```
+
+### docker-compose.yml
+```yaml
+version: '3.8'
+services:
+  studio-orlandi:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data        # Database SQLite persistente
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///./data/studio_orlandi.db
+      - SECRET_KEY=cambia-questa-chiave-segreta
+```
+
+---
+
+## 9. REQUIREMENTS PYTHON
+
+```
+fastapi==0.109.0
+uvicorn==0.27.0
+sqlalchemy==2.0.25
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+pydantic==2.5.3
+aiofiles==23.2.1
+```
+
+---
+
+## 10. ISTRUZIONI PER CLAUDE CODE
+
+Costruire il progetto in questo ordine:
+
+1. **Setup progetto** — creare struttura cartelle, requirements.txt, .gitignore
+2. **Database** — database.py con SQLAlchemy, models.py con tutti i modelli, script init_db.py che crea le tabelle e inserisce dati iniziali (tipi visita predefiniti, disponibilità lun-ven, impostazioni base)
+3. **Import comuni ISTAT** — script per scaricare e importare il CSV ISTAT dei comuni italiani nel database
+4. **Backend auth** — router auth.py con login, JWT, cambio password
+5. **Backend pazienti** — CRUD completo con calcolo CF e controllo duplicati
+6. **Backend appuntamenti** — CRUD con calcolo slot liberi
+7. **Backend impostazioni** — lettura/scrittura impostazioni e sedi
+8. **Backend portale** — endpoints pubblici per prenotazioni
+9. **main.py** — FastAPI app con tutti i router, CORS, serve file statici
+10. **Frontend** — HTML/CSS/JS per tutte le schermate
+11. **Docker** — Dockerfile e docker-compose.yml
+12. **Test** — verificare che tutto funzioni su localhost prima del deploy sul NAS
+
+---
+
+## 11. NOTE AGGIUNTIVE
+
+- Il NAS Ugreen 2800 ha Docker già installato e funzionante
+- Tailscale VPN già configurata per accesso remoto del medico
+- Vaultwarden già installato sul NAS per gestione password
+- Il progetto si chiama "Studio Orlandi" (non MediCare — nome già usato da altri)
+- Lingua interfaccia: italiano
+- Il medico è il Dott. Goffredo Orlandi, specialista in Medicina dello Sport e Cardiologia
+- Pistoia (PT) è la città principale dello studio
+- In futuro si integrerà con un sito web dello studio (da costruire separatamente)

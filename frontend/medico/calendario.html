@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendario — Studio Orlandi</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    .cal-wrap { padding:1.25rem; max-width:1100px; margin:0 auto; }
+    .cal-header-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:.75rem; }
+    .cal-stats { display:flex; gap:1.5rem; }
+    .stat-item { text-align:center; }
+    .stat-val { font-size:1.4rem; font-weight:700; color:var(--verde); }
+    .stat-lbl { font-size:.75rem; color:#888; }
+    .day-popup { position:absolute; background:#fff; border-radius:var(--radius); box-shadow:var(--ombra-card);
+                 padding:1rem; z-index:100; min-width:220px; font-size:.85rem; }
+    .app-row { display:flex; align-items:center; gap:.5rem; padding:.3rem 0; border-bottom:1px solid var(--grigio-bordo); }
+    .app-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .search-paziente-results { position:absolute; background:#fff; border:1.5px solid var(--grigio-bordo);
+      border-radius:var(--radius-sm); z-index:200; width:100%; max-height:200px; overflow-y:auto; }
+    .search-item { padding:.5rem .75rem; cursor:pointer; font-size:.88rem; }
+    .search-item:hover { background:var(--verde-chiaro); }
+    .tipo-badge { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:.4rem; }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div style="display:flex;align-items:center;gap:1rem">
+    <a href="/medico/home.html" style="color:#fff;opacity:.75;font-size:1.2rem">←</a>
+    <h1>Calendario Appuntamenti</h1>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-primary btn-sm" onclick="openModal('modal-nuovo')">+ Nuovo appuntamento</button>
+  </div>
+</header>
+
+<div class="cal-wrap">
+  <div class="cal-header-bar">
+    <div class="cal-nav">
+      <button class="btn btn-secondary btn-sm" id="btn-prev-m">◀</button>
+      <h2 id="mese-title" style="min-width:220px;text-align:center"></h2>
+      <button class="btn btn-secondary btn-sm" id="btn-next-m">▶</button>
+      <button class="btn btn-ghost btn-sm" id="btn-oggi">Oggi</button>
+    </div>
+    <div class="cal-stats">
+      <div class="stat-item"><div class="stat-val" id="st-mese">—</div><div class="stat-lbl">questo mese</div></div>
+      <div class="stat-item"><div class="stat-val" id="st-attesa">—</div><div class="stat-lbl">in attesa</div></div>
+    </div>
+  </div>
+
+  <div id="alert-cal"></div>
+
+  <div class="cal-grid" id="cal-grid">
+    <div class="cal-day-header">Lun</div>
+    <div class="cal-day-header">Mar</div>
+    <div class="cal-day-header">Mer</div>
+    <div class="cal-day-header">Gio</div>
+    <div class="cal-day-header">Ven</div>
+    <div class="cal-day-header">Sab</div>
+    <div class="cal-day-header">Dom</div>
+  </div>
+</div>
+
+<!-- Modal nuovo appuntamento -->
+<div class="modal-overlay hidden" id="modal-nuovo">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Nuovo appuntamento</h3>
+      <button class="modal-close" data-close-modal="modal-nuovo">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="alert-modal"></div>
+      <div class="form-group" style="position:relative">
+        <label>Paziente</label>
+        <input type="text" id="search-paziente" placeholder="Cerca per nome o cognome..." autocomplete="off">
+        <div class="search-paziente-results hidden" id="search-results"></div>
+        <input type="hidden" id="paziente-id-hidden">
+        <div id="paziente-selezionato" class="text-muted mt-1"></div>
+      </div>
+      <div class="form-group">
+        <label>Tipo visita</label>
+        <select id="tipo-visita-sel"><option value="">— Seleziona —</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="app-data">
+        </div>
+        <div class="form-group">
+          <label>Ora</label>
+          <input type="time" id="app-ora" step="300">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Sede</label>
+        <select id="sede-sel"><option value="">— Qualsiasi —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Stato</label>
+        <select id="app-stato">
+          <option value="confermato">Confermato</option>
+          <option value="in_attesa">In attesa</option>
+          <option value="completato">Completato</option>
+          <option value="annullato">Annullato</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Note</label>
+        <textarea id="app-note" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm hidden" id="btn-elimina-app">Elimina</button>
+      <button class="btn btn-secondary" data-close-modal="modal-nuovo">Annulla</button>
+      <button class="btn btn-primary" id="btn-salva-app">Salva</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/app.js"></script>
+<script>
+if (!requireAuth()) throw '';
+
+let anno = new Date().getFullYear();
+let mese = new Date().getMonth() + 1;
+let appuntamenti = [];
+let tipiVisita = [];
+let sedi = [];
+let appCorrenteId = null;
+
+/* ── Calendario ──────────────────────────────────────────────────────────── */
+async function caricaMese() {
+  document.getElementById('mese-title').textContent = `${nomeMese(mese-1)} ${anno}`;
+  try {
+    appuntamenti = await api(`/api/appuntamenti/mese/${anno}/${mese}`);
+    renderCalendario();
+    aggiornaStats();
+  } catch(e) {}
+}
+
+function renderCalendario() {
+  const grid = document.getElementById('cal-grid');
+  // Rimuovi celle vecchie (tieni gli header)
+  while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+  const primoGiorno = new Date(anno, mese-1, 1);
+  const ultimoGiorno = new Date(anno, mese, 0);
+  const oggi = new Date();
+
+  // Offset: lunedì=0
+  let offset = primoGiorno.getDay() - 1;
+  if (offset < 0) offset = 6;
+
+  // Celle vuote mese precedente
+  for (let i = 0; i < offset; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell fuori-mese';
+    const prevDay = new Date(anno, mese-1, -offset+i+1);
+    cell.innerHTML = `<div class="cal-day-num">${prevDay.getDate()}</div>`;
+    grid.appendChild(cell);
+  }
+
+  // Celle del mese
+  for (let g = 1; g <= ultimoGiorno.getDate(); g++) {
+    const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
+    const isOggi = oggi.getFullYear()===anno && oggi.getMonth()===mese-1 && oggi.getDate()===g;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isOggi ? ' oggi' : '');
+    cell.dataset.data = dataStr;
+
+    const appGiorno = appuntamenti.filter(a => a.data_ora.startsWith(dataStr));
+    const MAX = 3;
+    let html = `<div class="cal-day-num">${g}</div>`;
+    appGiorno.slice(0, MAX).forEach(a => {
+      const ora = a.data_ora.slice(11,16);
+      html += `<div class="cal-event" style="background:${a.tipo_visita_colore||'#0F6E56'}"
+               data-id="${a.id}" title="${a.nome_display}">${ora} ${a.nome_display}</div>`;
+    });
+    if (appGiorno.length > MAX) html += `<div class="cal-more">+${appGiorno.length-MAX} altri</div>`;
+    cell.innerHTML = html;
+
+    cell.addEventListener('click', e => {
+      if (e.target.classList.contains('cal-event')) {
+        apriModifica(parseInt(e.target.dataset.id));
+      } else {
+        apriNuovo(dataStr);
+      }
+    });
+    grid.appendChild(cell);
+  }
+
+  // Celle vuote mese successivo
+  const totale = offset + ultimoGiorno.getDate();
+  const righe = Math.ceil(totale / 7);
+  const celle = righe * 7;
+  for (let i = totale + 1; i <= celle; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell fuori-mese';
+    cell.innerHTML = `<div class="cal-day-num">${i-totale}</div>`;
+    grid.appendChild(cell);
+  }
+}
+
+function aggiornaStats() {
+  document.getElementById('st-mese').textContent = appuntamenti.filter(a=>a.stato!=='annullato').length;
+  document.getElementById('st-attesa').textContent = appuntamenti.filter(a=>a.stato==='in_attesa').length;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+function apriNuovo(dataStr = '') {
+  appCorrenteId = null;
+  document.getElementById('modal-title').textContent = 'Nuovo appuntamento';
+  document.getElementById('btn-elimina-app').classList.add('hidden');
+  resetModal();
+  if (dataStr) document.getElementById('app-data').value = dataStr;
+  openModal('modal-nuovo');
+}
+
+async function apriModifica(id) {
+  appCorrenteId = id;
+  document.getElementById('modal-title').textContent = 'Modifica appuntamento';
+  document.getElementById('btn-elimina-app').classList.remove('hidden');
+  resetModal();
+  const a = appuntamenti.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('app-data').value = a.data_ora.slice(0,10);
+  document.getElementById('app-ora').value  = a.data_ora.slice(11,16);
+  document.getElementById('tipo-visita-sel').value = a.tipo_visita_id || '';
+  document.getElementById('sede-sel').value  = a.sede_id || '';
+  document.getElementById('app-stato').value = a.stato;
+  document.getElementById('app-note').value  = a.note || '';
+  if (a.paziente_id) {
+    document.getElementById('paziente-id-hidden').value = a.paziente_id;
+    document.getElementById('paziente-selezionato').textContent = '✓ ' + a.nome_display;
+  }
+  openModal('modal-nuovo');
+}
+
+function resetModal() {
+  document.getElementById('alert-modal').innerHTML = '';
+  document.getElementById('search-paziente').value = '';
+  document.getElementById('paziente-id-hidden').value = '';
+  document.getElementById('paziente-selezionato').textContent = '';
+  document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('app-data').value = '';
+  document.getElementById('app-ora').value = '';
+  document.getElementById('tipo-visita-sel').value = '';
+  document.getElementById('sede-sel').value = '';
+  document.getElementById('app-stato').value = 'confermato';
+  document.getElementById('app-note').value = '';
+}
+
+/* ── Ricerca paziente nel modal ──────────────────────────────────────────── */
+let searchTimer2;
+document.getElementById('search-paziente').addEventListener('input', e => {
+  clearTimeout(searchTimer2);
+  const q = e.target.value.trim();
+  if (q.length < 2) { document.getElementById('search-results').classList.add('hidden'); return; }
+  searchTimer2 = setTimeout(async () => {
+    const res = await api(`/api/pazienti?q=${encodeURIComponent(q)}&limit=10`);
+    const box = document.getElementById('search-results');
+    box.innerHTML = '';
+    if (!res.pazienti.length) { box.classList.add('hidden'); return; }
+    res.pazienti.forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'search-item';
+      d.textContent = `${p.cognome} ${p.nome}${p.data_nascita?' ('+fmtData(p.data_nascita)+')':''}`;
+      d.addEventListener('click', () => {
+        document.getElementById('paziente-id-hidden').value = p.id;
+        document.getElementById('paziente-selezionato').textContent = `✓ ${p.cognome} ${p.nome}`;
+        document.getElementById('search-paziente').value = '';
+        box.classList.add('hidden');
+      });
+      box.appendChild(d);
+    });
+    box.classList.remove('hidden');
+  }, 300);
+});
+
+/* ── Salva appuntamento ───────────────────────────────────────────────────── */
+document.getElementById('btn-salva-app').addEventListener('click', async () => {
+  const alertM = document.getElementById('alert-modal');
+  const data = document.getElementById('app-data').value;
+  const ora  = document.getElementById('app-ora').value;
+  if (!data || !ora) { alertM.innerHTML='<div class="alert alert-error">Data e ora obbligatorie</div>'; return; }
+  const body = {
+    data_ora: `${data}T${ora}:00`,
+    tipo_visita_id: parseInt(document.getElementById('tipo-visita-sel').value) || null,
+    sede_id: parseInt(document.getElementById('sede-sel').value) || null,
+    paziente_id: parseInt(document.getElementById('paziente-id-hidden').value) || null,
+    stato: document.getElementById('app-stato').value,
+    note: document.getElementById('app-note').value || null,
+  };
+  try {
+    if (appCorrenteId) {
+      await api(`/api/appuntamenti/${appCorrenteId}`, { method:'PUT', body:JSON.stringify(body) });
+    } else {
+      await api('/api/appuntamenti', { method:'POST', body:JSON.stringify(body) });
+    }
+    closeModal('modal-nuovo');
+    caricaMese();
+  } catch(e) { alertM.innerHTML=`<div class="alert alert-error">${e.message}</div>`; }
+});
+
+document.getElementById('btn-elimina-app').addEventListener('click', async () => {
+  if (!confirm('Eliminare questo appuntamento?')) return;
+  try {
+    await api(`/api/appuntamenti/${appCorrenteId}`, { method:'DELETE' });
+    closeModal('modal-nuovo');
+    caricaMese();
+  } catch(e) { alert(e.message); }
+});
+
+/* ── Nav mese ─────────────────────────────────────────────────────────────── */
+document.getElementById('btn-prev-m').addEventListener('click', () => {
+  mese--; if (mese<1){ mese=12; anno--; } caricaMese();
+});
+document.getElementById('btn-next-m').addEventListener('click', () => {
+  mese++; if (mese>12){ mese=1; anno++; } caricaMese();
+});
+document.getElementById('btn-oggi').addEventListener('click', () => {
+  anno=new Date().getFullYear(); mese=new Date().getMonth()+1; caricaMese();
+});
+
+/* ── Init ─────────────────────────────────────────────────────────────────── */
+initModalClose();
+
+(async () => {
+  // Tipi visita
+  try {
+    tipiVisita = await api('/api/tipi-visita');
+    const sel = document.getElementById('tipo-visita-sel');
+    tipiVisita.forEach(tv => {
+      const o = document.createElement('option');
+      o.value = tv.id; o.textContent = `${tv.nome} (${tv.durata_minuti}min)`;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+  // Sedi
+  try {
+    sedi = await api('/api/sedi');
+    const sel = document.getElementById('sede-sel');
+    sedi.forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.id; o.textContent = s.nome;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+  caricaMese();
+})();
+</script>
+</body>
+</html>

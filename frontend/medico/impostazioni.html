@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impostazioni — Studio Orlandi</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    .imp-body { background:var(--grigio-bg); min-height:100vh; }
+    .imp-content { max-width:860px; margin:0 auto; padding:1.5rem; }
+    .sede-item { display:flex; align-items:flex-start; gap:.75rem; padding:1rem;
+                 border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm); margin-bottom:.75rem; background:#fff; }
+    .sede-body { flex:1; }
+    .sede-nome { font-weight:600; }
+    .sede-det  { font-size:.83rem; color:#888; }
+    .disp-row  { display:flex; align-items:center; gap:.75rem; padding:.6rem 0;
+                 border-bottom:1px solid var(--grigio-bordo); flex-wrap:wrap; }
+    .disp-gg   { width:90px; font-weight:500; font-size:.9rem; }
+    .disp-orari { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
+    .disp-orari input { width:80px; padding:.3rem .5rem; border:1.5px solid var(--grigio-bordo);
+                        border-radius:var(--radius-sm); }
+    .tv-item { display:flex; align-items:center; gap:.75rem; padding:.65rem .85rem;
+               border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm); margin-bottom:.5rem; background:#fff; }
+    .tv-dot-big { width:16px; height:16px; border-radius:50%; flex-shrink:0; }
+    .tv-body { flex:1; }
+    .tv-nome { font-weight:600; font-size:.9rem; }
+    .tv-det  { font-size:.78rem; color:#888; }
+  </style>
+</head>
+<body class="imp-body">
+
+<header class="site-header">
+  <div style="display:flex;align-items:center;gap:1rem">
+    <a href="/medico/home.html" style="color:#fff;opacity:.75;font-size:1.2rem">←</a>
+    <h1>Impostazioni</h1>
+  </div>
+</header>
+
+<div class="imp-content">
+  <div id="alert-imp"></div>
+
+  <div class="card">
+    <div class="tabs" id="main-tabs">
+      <button class="tab-btn active" data-tab="tab-intestazione">Intestazione</button>
+      <button class="tab-btn" data-tab="tab-contatti">Contatti</button>
+      <button class="tab-btn" data-tab="tab-agenda">Agenda</button>
+      <button class="tab-btn" data-tab="tab-password">Password</button>
+    </div>
+
+    <!-- ── Tab 1: Intestazione ── -->
+    <div id="tab-intestazione" class="tab-panel active">
+      <div class="form-group"><label>Nome medico</label><input id="i-nome-medico" placeholder="Dott. Goffredo Orlandi"></div>
+      <div class="form-group"><label>Specializzazioni</label><input id="i-specializzazioni" placeholder="— Diagnostica — Idoneità"></div>
+      <div class="form-group"><label>Servizi (uno per riga)</label><textarea id="i-servizi" rows="4" placeholder="— Elettrocardiogramma&#10;— Eco Cuore"></textarea></div>
+      <div class="form-group"><label>Testo home</label><input id="i-testo-home"></div>
+      <div class="form-group"><label>Username accesso</label><input id="i-username" minlength="3"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btn-salva-int">Salva intestazione</button>
+      </div>
+    </div>
+
+    <!-- ── Tab 2: Contatti / Sedi ── -->
+    <div id="tab-contatti" class="tab-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3>Sedi ambulatoriali</h3>
+        <button class="btn btn-primary btn-sm" id="btn-nuova-sede">+ Aggiungi sede</button>
+      </div>
+      <div id="sedi-list"></div>
+
+      <!-- Form sede (inline) -->
+      <div id="form-sede-wrap" class="hidden">
+        <div style="border:2px solid var(--verde);border-radius:var(--radius);padding:1.25rem;margin-top:1rem">
+          <h4 id="sede-form-title" style="margin-bottom:1rem">Nuova sede</h4>
+          <div class="form-group"><label>Nome sede *</label><input id="s-nome"></div>
+          <div class="form-group"><label>Indirizzo</label><input id="s-indirizzo"></div>
+          <div class="form-row">
+            <div class="form-group"><label>CAP</label><input id="s-cap" maxlength="5"></div>
+            <div class="form-group"><label>Città</label><input id="s-citta"></div>
+            <div class="form-group"><label>Provincia</label><input id="s-provincia" maxlength="30"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Telefono</label><input id="s-telefono" type="tel"></div>
+            <div class="form-group"><label>Email</label><input id="s-email" type="email"></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-secondary" id="btn-annulla-sede">Annulla</button>
+            <button class="btn btn-primary" id="btn-salva-sede">Salva sede</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab 3: Agenda ── -->
+    <div id="tab-agenda" class="tab-panel">
+      <h3 style="margin-bottom:1rem">Disponibilità settimanale</h3>
+      <div id="disp-list"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btn-salva-disp">Salva disponibilità</button>
+      </div>
+
+      <hr style="margin:2rem 0;border:none;border-top:1px solid var(--grigio-bordo)">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3>Tipologie di visita</h3>
+        <button class="btn btn-primary btn-sm" id="btn-nuova-tv">+ Aggiungi</button>
+      </div>
+      <div id="tv-list"></div>
+    </div>
+
+    <!-- ── Tab 4: Password ── -->
+    <div id="tab-password" class="tab-panel">
+      <div style="max-width:420px">
+        <div class="form-group"><label>Password corrente</label><input type="password" id="pw-corrente"></div>
+        <div class="form-group"><label>Nuova password</label><input type="password" id="pw-nuova" minlength="6"></div>
+        <div class="form-group"><label>Conferma nuova password</label><input type="password" id="pw-conferma"></div>
+        <div class="form-actions" style="justify-content:flex-start">
+          <button class="btn btn-primary" id="btn-cambia-pw">Cambia password</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .card -->
+</div>
+
+<!-- Modal tipo visita -->
+<div class="modal-overlay hidden" id="modal-tv">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tv-modal-title">Nuova tipologia</h3>
+      <button class="modal-close" data-close-modal="modal-tv">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome visita *</label><input id="tv-nome"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Durata (minuti)</label><input id="tv-durata" type="number" min="5" step="5" value="30"></div>
+        <div class="form-group"><label>Colore</label><input id="tv-colore" type="color" value="#0F6E56" style="height:42px;padding:.2rem"></div>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="tv-attivo" checked> Attivo</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="modal-tv">Annulla</button>
+      <button class="btn btn-primary" id="btn-salva-tv">Salva</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/app.js"></script>
+<script>
+if (!requireAuth()) throw '';
+
+const alertEl = document.getElementById('alert-imp');
+function showMsg(msg, type='success') {
+  alertEl.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => alertEl.innerHTML='', 4000);
+}
+
+initTabs(document.getElementById('main-tabs'));
+initModalClose();
+
+/* ── Tab 1: Intestazione ─────────────────────────────────────────────────── */
+async function caricaImpostazioni() {
+  try {
+    const d = await api('/api/impostazioni');
+    document.getElementById('i-nome-medico').value    = d.nome_medico || '';
+    document.getElementById('i-specializzazioni').value = d.specializzazioni || '';
+    document.getElementById('i-servizi').value        = d.servizi || '';
+    document.getElementById('i-testo-home').value     = d.testo_home || '';
+    document.getElementById('i-username').value       = d.username || '';
+  } catch(e) {}
+}
+
+document.getElementById('btn-salva-int').addEventListener('click', async () => {
+  try {
+    await api('/api/impostazioni', { method:'PUT', body: JSON.stringify({
+      nome_medico:      document.getElementById('i-nome-medico').value,
+      specializzazioni: document.getElementById('i-specializzazioni').value,
+      servizi:          document.getElementById('i-servizi').value,
+      testo_home:       document.getElementById('i-testo-home').value,
+      username:         document.getElementById('i-username').value,
+    })});
+    showMsg('Impostazioni salvate.');
+  } catch(e) { showMsg(e.message, 'error'); }
+});
+
+/* ── Tab 2: Sedi ──────────────────────────────────────────────────────────── */
+let sedi = [], sedeEditId = null;
+
+async function caricaSedi() {
+  sedi = await api('/api/sedi');
+  const list = document.getElementById('sedi-list');
+  list.innerHTML = '';
+  if (!sedi.length) { list.innerHTML='<p class="text-muted">Nessuna sede configurata.</p>'; return; }
+  sedi.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'sede-item';
+    d.innerHTML = `<div class="sede-body">
+      <div class="sede-nome">${s.nome}</div>
+      <div class="sede-det">${[s.indirizzo,s.citta,s.telefono,s.email].filter(Boolean).join(' · ')}</div>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="apriEditSede(${s.id})">Modifica</button>
+    <button class="btn btn-danger btn-sm" onclick="eliminaSede(${s.id})">×</button>`;
+    list.appendChild(d);
+  });
+}
+
+function apriEditSede(id) {
+  sedeEditId = id;
+  const s = sedi.find(x => x.id === id);
+  document.getElementById('sede-form-title').textContent = 'Modifica sede';
+  document.getElementById('s-nome').value      = s.nome || '';
+  document.getElementById('s-indirizzo').value = s.indirizzo || '';
+  document.getElementById('s-cap').value       = s.cap || '';
+  document.getElementById('s-citta').value     = s.citta || '';
+  document.getElementById('s-provincia').value = s.provincia || '';
+  document.getElementById('s-telefono').value  = s.telefono || '';
+  document.getElementById('s-email').value     = s.email || '';
+  document.getElementById('form-sede-wrap').classList.remove('hidden');
+}
+
+document.getElementById('btn-nuova-sede').addEventListener('click', () => {
+  sedeEditId = null;
+  document.getElementById('sede-form-title').textContent = 'Nuova sede';
+  ['s-nome','s-indirizzo','s-cap','s-citta','s-provincia','s-telefono','s-email'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('form-sede-wrap').classList.remove('hidden');
+});
+
+document.getElementById('btn-annulla-sede').addEventListener('click', () => {
+  document.getElementById('form-sede-wrap').classList.add('hidden');
+});
+
+document.getElementById('btn-salva-sede').addEventListener('click', async () => {
+  const body = {
+    nome:      document.getElementById('s-nome').value.trim(),
+    indirizzo: document.getElementById('s-indirizzo').value || null,
+    cap:       document.getElementById('s-cap').value || null,
+    citta:     document.getElementById('s-citta').value || null,
+    provincia: document.getElementById('s-provincia').value || null,
+    telefono:  document.getElementById('s-telefono').value || null,
+    email:     document.getElementById('s-email').value || null,
+  };
+  if (!body.nome) { showMsg('Nome sede obbligatorio', 'error'); return; }
+  try {
+    if (sedeEditId) {
+      await api(`/api/sedi/${sedeEditId}`, { method:'PUT', body:JSON.stringify(body) });
+    } else {
+      await api('/api/sedi', { method:'POST', body:JSON.stringify(body) });
+    }
+    document.getElementById('form-sede-wrap').classList.add('hidden');
+    caricaSedi(); showMsg('Sede salvata.');
+  } catch(e) { showMsg(e.message, 'error'); }
+});
+
+async function eliminaSede(id) {
+  if (!confirm('Eliminare questa sede?')) return;
+  try { await api(`/api/sedi/${id}`, { method:'DELETE' }); caricaSedi(); } catch(e) { showMsg(e.message,'error'); }
+}
+
+/* ── Tab 3: Disponibilità ────────────────────────────────────────────────── */
+let disponibilita = [];
+
+async function caricaDisponibilita() {
+  disponibilita = await api('/api/disponibilita');
+  const list = document.getElementById('disp-list');
+  list.innerHTML = '';
+  disponibilita.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'disp-row';
+    row.dataset.gg = d.giorno_settimana;
+    row.innerHTML = `
+      <label style="display:flex;align-items:center;gap:.4rem;width:120px;cursor:pointer">
+        <input type="checkbox" class="d-attivo" ${d.attivo?'checked':''}>
+        <span class="disp-gg">${d.giorno_nome}</span>
+      </label>
+      <div class="disp-orari">
+        M: <input type="time" class="d-im" value="${d.ora_inizio_mattina}">
+        – <input type="time" class="d-fm" value="${d.ora_fine_mattina}">
+        &nbsp; P: <input type="time" class="d-ip" value="${d.ora_inizio_pomeriggio}">
+        – <input type="time" class="d-fp" value="${d.ora_fine_pomeriggio}">
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('btn-salva-disp').addEventListener('click', async () => {
+  const rows = document.querySelectorAll('#disp-list .disp-row');
+  const disp = [];
+  rows.forEach(row => {
+    disp.push({
+      giorno_settimana:    parseInt(row.dataset.gg),
+      ora_inizio_mattina:  row.querySelector('.d-im').value,
+      ora_fine_mattina:    row.querySelector('.d-fm').value,
+      ora_inizio_pomeriggio: row.querySelector('.d-ip').value,
+      ora_fine_pomeriggio: row.querySelector('.d-fp').value,
+      attivo:              row.querySelector('.d-attivo').checked,
+    });
+  });
+  try {
+    await api('/api/disponibilita', { method:'PUT', body:JSON.stringify({ disponibilita: disp }) });
+    showMsg('Disponibilità salvata.');
+  } catch(e) { showMsg(e.message, 'error'); }
+});
+
+/* ── Tipi visita ──────────────────────────────────────────────────────────── */
+let tipiVisita = [], tvEditId = null;
+
+async function caricaTipiVisita() {
+  tipiVisita = await api('/api/tipi-visita');
+  const list = document.getElementById('tv-list');
+  list.innerHTML = '';
+  tipiVisita.forEach(tv => {
+    const d = document.createElement('div');
+    d.className = 'tv-item';
+    d.innerHTML = `<div class="tv-dot-big" style="background:${tv.colore}"></div>
+      <div class="tv-body">
+        <div class="tv-nome">${tv.nome}</div>
+        <div class="tv-det">${tv.durata_minuti} min · ${tv.attivo?'Attivo':'Non attivo'}</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="apriEditTV(${tv.id})">Modifica</button>
+      <button class="btn btn-danger btn-sm" onclick="eliminaTV(${tv.id})">×</button>`;
+    list.appendChild(d);
+  });
+}
+
+function apriEditTV(id) {
+  tvEditId = id;
+  const tv = tipiVisita.find(x => x.id === id);
+  document.getElementById('tv-modal-title').textContent = 'Modifica tipologia';
+  document.getElementById('tv-nome').value    = tv.nome;
+  document.getElementById('tv-durata').value  = tv.durata_minuti;
+  document.getElementById('tv-colore').value  = tv.colore;
+  document.getElementById('tv-attivo').checked = tv.attivo;
+  openModal('modal-tv');
+}
+
+document.getElementById('btn-nuova-tv').addEventListener('click', () => {
+  tvEditId = null;
+  document.getElementById('tv-modal-title').textContent = 'Nuova tipologia';
+  document.getElementById('tv-nome').value   = '';
+  document.getElementById('tv-durata').value = 30;
+  document.getElementById('tv-colore').value = '#0F6E56';
+  document.getElementById('tv-attivo').checked = true;
+  openModal('modal-tv');
+});
+
+document.getElementById('btn-salva-tv').addEventListener('click', async () => {
+  const body = {
+    nome:          document.getElementById('tv-nome').value.trim(),
+    durata_minuti: parseInt(document.getElementById('tv-durata').value),
+    colore:        document.getElementById('tv-colore').value,
+    attivo:        document.getElementById('tv-attivo').checked,
+  };
+  if (!body.nome) { showMsg('Nome obbligatorio', 'error'); return; }
+  try {
+    if (tvEditId) {
+      await api(`/api/tipi-visita/${tvEditId}`, { method:'PUT', body:JSON.stringify(body) });
+    } else {
+      await api('/api/tipi-visita', { method:'POST', body:JSON.stringify(body) });
+    }
+    closeModal('modal-tv'); caricaTipiVisita(); showMsg('Tipologia salvata.');
+  } catch(e) { showMsg(e.message, 'error'); }
+});
+
+async function eliminaTV(id) {
+  if (!confirm('Eliminare questa tipologia?')) return;
+  try { await api(`/api/tipi-visita/${id}`, { method:'DELETE' }); caricaTipiVisita(); } catch(e) { showMsg(e.message,'error'); }
+}
+
+/* ── Tab 4: Password ──────────────────────────────────────────────────────── */
+document.getElementById('btn-cambia-pw').addEventListener('click', async () => {
+  const body = {
+    password_corrente: document.getElementById('pw-corrente').value,
+    nuova_password:    document.getElementById('pw-nuova').value,
+    conferma_password: document.getElementById('pw-conferma').value,
+  };
+  try {
+    await api('/api/auth/change-password', { method:'POST', body:JSON.stringify(body) });
+    showMsg('Password aggiornata con successo.');
+    ['pw-corrente','pw-nuova','pw-conferma'].forEach(id => document.getElementById(id).value = '');
+  } catch(e) { showMsg(e.message, 'error'); }
+});
+
+// Init
+(async () => {
+  await Promise.all([caricaImpostazioni(), caricaSedi(), caricaDisponibilita(), caricaTipiVisita()]);
+})();
+</script>
+</body>
+</html>

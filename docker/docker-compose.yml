@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  studio-orlandi:
+    build:
+      context: ..              # root del progetto
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../data:/app/data      # database SQLite persistente sul NAS
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///./data/studio_orlandi.db
+      - SECRET_KEY=5d0baa325d35e4ad062923cbd56b1ce6ac6cafe6e01988fef35ac957c3cd041c
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

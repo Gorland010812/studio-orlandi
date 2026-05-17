@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prenota una visita — Studio Orlandi</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    body { background:var(--grigio-bg); }
+    .prenota-header { background:linear-gradient(135deg,var(--verde-scuro),var(--verde));
+                      color:#fff; padding:1.25rem 1.5rem; }
+    .prenota-header h1 { font-size:1.3rem; }
+    .prenota-header p  { font-size:.85rem; opacity:.85; }
+    .prenota-body { max-width:780px; margin:0 auto; padding:1.5rem; }
+    .wizard-card  { background:#fff; border-radius:var(--radius); box-shadow:var(--ombra); padding:1.75rem; }
+    .wizard-nav   { display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; }
+    .riepilogo-row { display:flex; justify-content:space-between; padding:.5rem 0;
+                     border-bottom:1px solid var(--grigio-bordo); font-size:.9rem; }
+    .riepilogo-row .lbl { color:#888; }
+    .sedi-footer { background:#fff; border-radius:var(--radius); box-shadow:var(--ombra);
+                   padding:1.25rem 1.5rem; margin-top:1.5rem; }
+    .sedi-footer h3 { font-size:1rem; margin-bottom:.75rem; color:var(--verde-scuro); }
+    .sede-card-pub { border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm);
+                     padding:.75rem 1rem; margin-bottom:.5rem; font-size:.88rem; }
+    .autocomplete-res { position:absolute; background:#fff; border:1.5px solid var(--grigio-bordo);
+                         border-radius:var(--radius-sm); z-index:100; width:100%; max-height:180px; overflow-y:auto; top:100%; left:0; }
+    .autocomplete-item { padding:.5rem .75rem; cursor:pointer; font-size:.87rem; }
+    .autocomplete-item:hover { background:var(--verde-chiaro); }
+    .success-box { text-align:center; padding:2rem; }
+    .success-icon { font-size:3.5rem; margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+
+<div class="prenota-header">
+  <h1 id="hdr-nome">Studio Orlandi</h1>
+  <p id="hdr-spec"></p>
+</div>
+
+<div class="prenota-body">
+
+  <!-- Step indicator -->
+  <div class="wizard-steps" style="padding:1.5rem 0">
+    <div class="wizard-step active" id="step-ind-1">
+      <div class="wizard-step-num">1</div>
+      <div class="wizard-step-label">Tipo visita</div>
+    </div>
+    <div class="wizard-connector" id="conn-1"></div>
+    <div class="wizard-step" id="step-ind-2">
+      <div class="wizard-step-num">2</div>
+      <div class="wizard-step-label">Data e ora</div>
+    </div>
+    <div class="wizard-connector" id="conn-2"></div>
+    <div class="wizard-step" id="step-ind-3">
+      <div class="wizard-step-num">3</div>
+      <div class="wizard-step-label">Dati personali</div>
+    </div>
+    <div class="wizard-connector" id="conn-3"></div>
+    <div class="wizard-step" id="step-ind-4">
+      <div class="wizard-step-num">4</div>
+      <div class="wizard-step-label">Conferma</div>
+    </div>
+  </div>
+
+  <div class="wizard-card">
+    <div id="alert-prenota"></div>
+
+    <!-- Step 1: Tipo visita -->
+    <div class="wizard-panel active" id="panel-1">
+      <h2 style="margin-bottom:1.25rem">Seleziona il tipo di visita</h2>
+      <div class="tv-cards" id="tv-cards-pub"></div>
+      <div class="wizard-nav">
+        <a href="/" class="btn btn-secondary">← Home</a>
+        <button class="btn btn-primary" id="btn-step1-next" disabled>Avanti →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Data e ora -->
+    <div class="wizard-panel" id="panel-2">
+      <h2 style="margin-bottom:.5rem">Scegli data e ora</h2>
+      <p class="text-muted mb-2" id="slot-tipo-label"></p>
+      <div id="slot-loading" class="spinner"></div>
+      <div class="slot-giorni" id="slot-giorni-pub"></div>
+      <div class="wizard-nav">
+        <button class="btn btn-secondary" id="btn-step2-back">← Indietro</button>
+        <button class="btn btn-primary" id="btn-step2-next" disabled>Avanti →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Dati personali -->
+    <div class="wizard-panel" id="panel-3">
+      <h2 style="margin-bottom:1rem">Dati personali</h2>
+
+      <!-- Autocompletamento -->
+      <div class="form-row" style="position:relative">
+        <div class="form-group" style="position:relative">
+          <label>Cognome *</label>
+          <input id="p-cognome" required autocomplete="off">
+        </div>
+        <div class="form-group" style="position:relative">
+          <label>Nome *</label>
+          <input id="p-nome" required autocomplete="off">
+          <div class="autocomplete-res hidden" id="autocomplete-res"></div>
+        </div>
+      </div>
+      <div id="autocomplete-msg" class="text-muted hidden" style="font-size:.82rem;margin-bottom:.75rem"></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data di nascita</label>
+          <input id="p-data-nascita" type="date">
+        </div>
+        <div class="form-group">
+          <label>Sesso</label>
+          <select id="p-sesso"><option value="">—</option><option value="M">Maschio</option><option value="F">Femmina</option></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Provincia di nascita</label>
+          <select id="p-prov-nascita"><option value="">— Seleziona —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Comune di nascita</label>
+          <select id="p-comune-nascita"><option value="">— Prima seleziona provincia —</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Luogo di nascita (libero, se non in lista)</label>
+        <input id="p-luogo-libero" placeholder="es. Pistoia (PT)">
+      </div>
+      <div class="form-group">
+        <label>Codice Fiscale</label>
+        <input id="p-cf" style="font-family:monospace;text-transform:uppercase;letter-spacing:.06em" placeholder="Calcolato automaticamente">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label>Città di residenza</label><input id="p-citta"></div>
+        <div class="form-group"><label>Provincia res.</label><input id="p-prov-res" maxlength="2" style="text-transform:uppercase"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Telefono</label>
+          <input id="p-telefono" type="tel" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="p-email" type="email">
+        </div>
+      </div>
+
+      <div class="form-group"><label>Note aggiuntive</label><textarea id="p-note" rows="2"></textarea></div>
+
+      <div class="wizard-nav">
+        <button class="btn btn-secondary" id="btn-step3-back">← Indietro</button>
+        <button class="btn btn-primary" id="btn-step3-next">Avanti →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Conferma -->
+    <div class="wizard-panel" id="panel-4">
+      <h2 style="margin-bottom:1.25rem">Riepilogo e conferma</h2>
+      <div id="riepilogo-wrap"></div>
+      <div style="margin-top:1.5rem;padding:1rem;background:var(--verde-chiaro);border-radius:var(--radius-sm)">
+        <label style="display:flex;gap:.75rem;align-items:flex-start;cursor:pointer">
+          <input type="checkbox" id="privacy-check" style="margin-top:.2rem;width:18px;height:18px">
+          <span style="font-size:.88rem">Accetto il trattamento dei dati personali ai sensi del GDPR (Reg. UE 2016/679)
+          per la gestione dell'appuntamento medico. I dati saranno trattati esclusivamente per finalità sanitarie.</span>
+        </label>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn btn-secondary" id="btn-step4-back">← Indietro</button>
+        <button class="btn btn-primary btn-lg" id="btn-invia" disabled>Invia richiesta</button>
+      </div>
+    </div>
+
+    <!-- Successo -->
+    <div class="wizard-panel" id="panel-ok">
+      <div class="success-box">
+        <div class="success-icon">✅</div>
+        <h2 style="color:var(--verde-scuro);margin-bottom:.75rem">Richiesta inviata!</h2>
+        <p style="color:#555;max-width:400px;margin:0 auto 1.5rem">
+          La tua richiesta è stata ricevuta. Lo studio ti contatterà al più presto per confermare l'appuntamento.
+        </p>
+        <a href="/" class="btn btn-primary">Torna alla home</a>
+      </div>
+    </div>
+
+  </div><!-- .wizard-card -->
+
+  <!-- Info sedi -->
+  <div class="sedi-footer">
+    <h3>Contatti Studio</h3>
+    <div id="sedi-pub"></div>
+  </div>
+
+</div><!-- .prenota-body -->
+
+<script src="/assets/app.js"></script>
+<script>
+let stepCorrente = 1;
+let tipoSelezionato = null;   // {id, nome, durata_minuti}
+let slotSelezionato = null;   // {data, ora}  → "2024-03-15T10:30"
+let provinceCaricate = false;
+
+function goStep(n) {
+  [1,2,3,4,'ok'].forEach(s => {
+    document.getElementById(`panel-${s}`)?.classList.remove('active');
+    if (typeof s === 'number') {
+      document.getElementById(`step-ind-${s}`)?.classList.remove('active','done');
+    }
+  });
+  document.getElementById(`panel-${n}`)?.classList.add('active');
+  if (typeof n === 'number') {
+    for (let i = 1; i < n; i++) {
+      document.getElementById(`step-ind-${i}`)?.classList.add('done');
+      document.getElementById(`conn-${i}`)?.classList.add('done');
+    }
+    document.getElementById(`step-ind-${n}`)?.classList.add('active');
+  }
+  stepCorrente = n;
+  window.scrollTo(0,0);
+}
+
+/* ── Info studio ──────────────────────────────────────────────────────────── */
+(async () => {
+  try {
+    const info = await api('/api/prenota/info-studio');
+    document.getElementById('hdr-nome').textContent  = info.nome_medico;
+    document.getElementById('hdr-spec').textContent  = info.specializzazioni;
+    const sediEl = document.getElementById('sedi-pub');
+    (info.sedi || []).forEach(s => {
+      const d = document.createElement('div');
+      d.className = 'sede-card-pub';
+      d.innerHTML = `<strong>${s.nome}</strong><br>
+        ${[s.indirizzo, s.citta].filter(Boolean).join(', ')}<br>
+        ${s.telefono ? '📞 '+s.telefono : ''} ${s.email ? '✉️ '+s.email : ''}`;
+      sediEl.appendChild(d);
+    });
+  } catch(e) {}
+})();
+
+/* ── Step 1: Tipi visita ──────────────────────────────────────────────────── */
+(async () => {
+  try {
+    const tipi = await api('/api/prenota/tipi-visita');
+    const cont = document.getElementById('tv-cards-pub');
+    tipi.forEach(tv => {
+      const card = document.createElement('div');
+      card.className = 'tv-card';
+      card.innerHTML = `<div class="tv-dot" style="background:${tv.colore}"></div>
+        <div class="tv-nome">${tv.nome}</div>
+        <div class="tv-durata">⏱ ${tv.durata_minuti} minuti</div>`;
+      card.addEventListener('click', () => {
+        cont.querySelectorAll('.tv-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        tipoSelezionato = tv;
+        document.getElementById('btn-step1-next').disabled = false;
+      });
+      cont.appendChild(card);
+    });
+  } catch(e) { document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Errore caricamento servizi</div>'; }
+})();
+
+document.getElementById('btn-step1-next').addEventListener('click', async () => {
+  goStep(2);
+  caricaSlot();
+});
+
+/* ── Step 2: Slot ────────────────────────────────────────────────────────── */
+async function caricaSlot() {
+  const loading = document.getElementById('slot-loading');
+  const cont    = document.getElementById('slot-giorni-pub');
+  document.getElementById('slot-tipo-label').textContent = `Tipo: ${tipoSelezionato.nome} — ${tipoSelezionato.durata_minuti} min`;
+  loading.classList.remove('hidden');
+  cont.innerHTML = '';
+  try {
+    const giorni = await api(`/api/prenota/slot-liberi?tipo_visita_id=${tipoSelezionato.id}`);
+    loading.classList.add('hidden');
+    if (!giorni.length) {
+      cont.innerHTML = '<p class="text-muted">Nessuno slot disponibile nelle prossime settimane. Contatta lo studio.</p>';
+      return;
+    }
+    giorni.forEach(g => {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `<div class="slot-giorno-header">${formatDataItaliano(g.data)}</div>`;
+      const slotList = document.createElement('div');
+      slotList.className = 'slot-list';
+      g.slot.forEach(ora => {
+        const btn = document.createElement('button');
+        btn.className = 'slot-btn';
+        btn.textContent = ora;
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          slotSelezionato = { data: g.data, ora };
+          document.getElementById('btn-step2-next').disabled = false;
+        });
+        slotList.appendChild(btn);
+      });
+      wrap.appendChild(slotList);
+      cont.appendChild(wrap);
+    });
+  } catch(e) {
+    loading.classList.add('hidden');
+    cont.innerHTML = '<p class="text-muted">Errore caricamento slot.</p>';
+  }
+}
+
+document.getElementById('btn-step2-back').addEventListener('click', () => goStep(1));
+document.getElementById('btn-step2-next').addEventListener('click', () => {
+  goStep(3);
+  if (!provinceCaricate) {
+    caricaProvince(document.getElementById('p-prov-nascita')).then(() => { provinceCaricate = true; });
+  }
+});
+
+/* ── Step 3: Dati paziente ───────────────────────────────────────────────── */
+// Cascata provincia → comune
+document.getElementById('p-prov-nascita').addEventListener('change', function() {
+  const selCom = document.getElementById('p-comune-nascita');
+  if (this.value) caricaComuni(this.value, selCom);
+  else selCom.innerHTML = '<option value="">— Prima seleziona provincia —</option>';
+});
+
+// CF auto
+['p-cognome','p-nome','p-data-nascita','p-sesso'].forEach(id => {
+  document.getElementById(id).addEventListener('change', ricalcolaCFPub);
+});
+document.getElementById('p-comune-nascita').addEventListener('change', ricalcolaCFPub);
+
+function ricalcolaCFPub() {
+  const cognome = document.getElementById('p-cognome').value;
+  const nome    = document.getElementById('p-nome').value;
+  const dn      = document.getElementById('p-data-nascita').value;
+  const sesso   = document.getElementById('p-sesso').value;
+  const codice  = document.getElementById('p-comune-nascita').value;
+  if (cognome && nome && dn && sesso && codice) {
+    document.getElementById('p-cf').value = calcolaCodiceFiscale(cognome, nome, dn, sesso, codice);
+  }
+}
+
+// Autocompletamento paziente esistente
+let autoTimer;
+function triggerAutocompletamento() {
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(async () => {
+    const nome    = document.getElementById('p-nome').value.trim();
+    const cognome = document.getElementById('p-cognome').value.trim();
+    if (nome.length < 2 || cognome.length < 2) return;
+    try {
+      const res = await api(`/api/prenota/cerca-paziente?nome=${encodeURIComponent(nome)}&cognome=${encodeURIComponent(cognome)}`);
+      const box = document.getElementById('autocomplete-res');
+      const msg = document.getElementById('autocomplete-msg');
+      if (!res.length) { box.classList.add('hidden'); return; }
+      box.innerHTML = '';
+      res.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.textContent = `${p.cognome} ${p.nome}${p.data_nascita ? ' · '+fmtData(p.data_nascita) : ''}`;
+        item.addEventListener('click', () => {
+          precompilaPaziente(p);
+          box.classList.add('hidden');
+          msg.textContent = '✓ Dati pre-compilati dall\'archivio — verifica e completa se necessario';
+          msg.classList.remove('hidden');
+        });
+        box.appendChild(item);
+      });
+      box.classList.remove('hidden');
+    } catch(e) {}
+  }, 600);
+}
+document.getElementById('p-nome').addEventListener('input', triggerAutocompletamento);
+document.getElementById('p-cognome').addEventListener('input', triggerAutocompletamento);
+
+function precompilaPaziente(p) {
+  document.getElementById('p-data-nascita').value = p.data_nascita || '';
+  document.getElementById('p-sesso').value        = p.sesso || '';
+  document.getElementById('p-cf').value           = p.codice_fiscale || '';
+  document.getElementById('p-citta').value        = p.citta_residenza || '';
+  document.getElementById('p-prov-res').value     = p.provincia_residenza || '';
+  document.getElementById('p-telefono').value     = p.telefono || '';
+  document.getElementById('p-email').value        = p.email || '';
+  if (p.provincia_nascita) {
+    const selProv = document.getElementById('p-prov-nascita');
+    selProv.value = p.provincia_nascita;
+    caricaComuni(p.provincia_nascita, document.getElementById('p-comune-nascita')).then(() => {
+      if (p.codice_comune_nascita) document.getElementById('p-comune-nascita').value = p.codice_comune_nascita;
+    });
+  }
+}
+
+document.getElementById('btn-step3-back').addEventListener('click', () => goStep(2));
+document.getElementById('btn-step3-next').addEventListener('click', () => {
+  const cognome  = document.getElementById('p-cognome').value.trim();
+  const nome     = document.getElementById('p-nome').value.trim();
+  const telefono = document.getElementById('p-telefono').value.trim();
+  if (!cognome || !nome) {
+    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Nome e cognome obbligatori</div>';
+    return;
+  }
+  if (!telefono) {
+    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Il telefono è obbligatorio</div>';
+    return;
+  }
+  document.getElementById('alert-prenota').innerHTML='';
+  generaRiepilogo();
+  goStep(4);
+});
+
+/* ── Step 4: Conferma ────────────────────────────────────────────────────── */
+function generaRiepilogo() {
+  const dn = document.getElementById('p-data-nascita').value;
+  const righe = [
+    ['Tipo visita',     tipoSelezionato?.nome],
+    ['Data e ora',      slotSelezionato ? formatDataItaliano(slotSelezionato.data) + ' alle ' + slotSelezionato.ora : ''],
+    ['Paziente',        document.getElementById('p-cognome').value + ' ' + document.getElementById('p-nome').value],
+    ['Data di nascita', dn ? fmtData(dn) : ''],
+    ['Codice Fiscale',  document.getElementById('p-cf').value],
+    ['Telefono',        document.getElementById('p-telefono').value],
+    ['Email',           document.getElementById('p-email').value],
+    ['Note',            document.getElementById('p-note').value],
+  ];
+  const wrap = document.getElementById('riepilogo-wrap');
+  wrap.innerHTML = righe.filter(r => r[1]).map(r =>
+    `<div class="riepilogo-row"><span class="lbl">${r[0]}</span><span><strong>${r[1]}</strong></span></div>`
+  ).join('');
+}
+
+document.getElementById('privacy-check').addEventListener('change', function() {
+  document.getElementById('btn-invia').disabled = !this.checked;
+});
+document.getElementById('btn-step4-back').addEventListener('click', () => goStep(3));
+
+document.getElementById('btn-invia').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-invia');
+  btn.disabled = true; btn.textContent = 'Invio in corso...';
+  const dataOra = `${slotSelezionato.data}T${slotSelezionato.ora}:00`;
+  const selCom  = document.getElementById('p-comune-nascita');
+  const body = {
+    tipo_visita_id:        tipoSelezionato.id,
+    data_ora:              dataOra,
+    nome:                  document.getElementById('p-nome').value.trim(),
+    cognome:               document.getElementById('p-cognome').value.trim(),
+    data_nascita:          document.getElementById('p-data-nascita').value || null,
+    sesso:                 document.getElementById('p-sesso').value || null,
+    codice_comune_nascita: selCom?.value || null,
+    luogo_nascita:         selCom?.selectedOptions[0]?.textContent || document.getElementById('p-luogo-libero').value || null,
+    codice_fiscale:        document.getElementById('p-cf').value || null,
+    citta_residenza:       document.getElementById('p-citta').value || null,
+    provincia_residenza:   document.getElementById('p-prov-res').value || null,
+    telefono:              document.getElementById('p-telefono').value || null,
+    email:                 document.getElementById('p-email').value || null,
+    note:                  document.getElementById('p-note').value || null,
+    privacy_accettata:     true,
+  };
+  try {
+    await api('/api/prenota/richiesta', { method:'POST', body:JSON.stringify(body) });
+    goStep('ok');
+  } catch(e) {
+    document.getElementById('alert-prenota').innerHTML=`<div class="alert alert-error">${e.message}</div>`;
+    btn.disabled = false; btn.textContent = 'Invia richiesta';
+  }
+});
+</script>
+</body>
+</html>
