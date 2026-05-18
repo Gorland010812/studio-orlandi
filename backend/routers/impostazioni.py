@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from database import get_db
-from models import Impostazioni, Sede, TipoVisita, Disponibilita
+from models import Impostazioni, Sede, TipoVisita, Disponibilita, Appuntamento
 from routers.auth import get_current_user
 
 # Quattro router separati — inclusi singolarmente in main.py
@@ -184,6 +184,7 @@ def elimina_tipo_visita(tv_id: int, db: Session = Depends(get_db), _=Depends(get
     tv = db.query(TipoVisita).filter(TipoVisita.id == tv_id).first()
     if not tv:
         raise HTTPException(status_code=404, detail="Tipo visita non trovato")
+    db.query(Appuntamento).filter(Appuntamento.tipo_visita_id == tv_id).update({"tipo_visita_id": None})
     db.delete(tv)
     db.commit()
 

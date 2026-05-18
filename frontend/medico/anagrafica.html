@@ -34,6 +34,14 @@
     .empty-state .e-icon { font-size:3rem; }
     .dup-banner { background:#fff3cd; border:1px solid #ffc107; border-radius:var(--radius-sm);
                   padding:.6rem 1rem; font-size:.85rem; margin-bottom:1rem; }
+    .btn-back-mobile { display:none; }
+    @media (max-width: 768px) {
+      .anag-layout { flex-direction:column; height:auto; min-height:calc(100vh - 64px); }
+      .anag-sidebar { width:100%; height:auto; min-width:unset; border-right:none; border-bottom:1px solid var(--grigio-bordo); max-height:260px; }
+      .pt-list { max-height:190px; }
+      .anag-main { min-height:50vh; }
+      .btn-back-mobile { display:inline-flex; margin:.75rem 1rem 0; }
+    }
   </style>
 </head>
 <body>
@@ -59,6 +67,7 @@
 
   <!-- Pannello dettaglio -->
   <div class="anag-main" id="anag-main">
+    <button class="btn btn-secondary btn-sm btn-back-mobile hidden" id="btn-back-lista" onclick="document.querySelector('.anag-sidebar').scrollIntoView({behavior:'smooth'})">← Lista pazienti</button>
     <div class="empty-state">
       <div class="e-icon">👥</div>
       <p>Seleziona un paziente dalla lista<br>o crea un nuovo profilo.</p>
@@ -227,6 +236,10 @@ async function apriPaziente(id, idx) {
   pazienteCorrente = p;
   renderScheda(p);
   renderLista();
+  if (window.innerWidth <= 768) {
+    document.getElementById('anag-main').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('btn-back-lista')?.classList.remove('hidden');
+  }
 }
 
 function renderScheda(p) {

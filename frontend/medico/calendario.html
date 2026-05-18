@@ -17,10 +17,34 @@
     .app-row { display:flex; align-items:center; gap:.5rem; padding:.3rem 0; border-bottom:1px solid var(--grigio-bordo); }
     .app-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
     .search-paziente-results { position:absolute; background:#fff; border:1.5px solid var(--grigio-bordo);
-      border-radius:var(--radius-sm); z-index:200; width:100%; max-height:200px; overflow-y:auto; }
-    .search-item { padding:.5rem .75rem; cursor:pointer; font-size:.88rem; }
+      border-radius:var(--radius-sm); z-index:200; width:100%; max-height:220px; overflow-y:auto;
+      box-shadow:var(--ombra); top:calc(100% + 2px); left:0; }
+    .search-item { padding:.55rem .85rem; cursor:pointer; font-size:.88rem; border-bottom:1px solid var(--grigio-bordo); }
+    .search-item:last-child { border-bottom:none; }
     .search-item:hover { background:var(--verde-chiaro); }
     .tipo-badge { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:.4rem; }
+    .paziente-field-wrap { position:relative; display:flex; gap:.4rem; align-items:center; }
+    .paziente-field-wrap input { flex:1; }
+    /* Mobile list view */
+    .cal-list { display:flex; flex-direction:column; gap:.5rem; }
+    .cal-list-day { background:#fff; border-radius:var(--radius-sm); border:1px solid var(--grigio-bordo); overflow:hidden; }
+    .cal-list-day-hdr { display:flex; align-items:center; justify-content:space-between; padding:.6rem 1rem;
+                        background:var(--verde-chiaro); cursor:pointer; }
+    .cal-list-day-nome { font-weight:600; font-size:.9rem; color:var(--verde-scuro); text-transform:capitalize; }
+    .cal-list-day-n { font-size:.75rem; color:var(--verde); font-weight:600; }
+    .cal-list-event { display:flex; align-items:center; gap:.75rem; padding:.6rem 1rem;
+                      border-top:1px solid var(--grigio-bordo); cursor:pointer; }
+    .cal-list-event:hover { background:var(--verde-chiaro); }
+    .cal-list-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .cal-list-info { flex:1; font-size:.88rem; }
+    .cal-list-ora { font-size:.75rem; color:#888; }
+    .cal-list-empty { padding:.6rem 1rem; font-size:.82rem; color:#bbb; border-top:1px solid var(--grigio-bordo); }
+    .cal-view-btn { display:none; }
+    @media (max-width: 768px) {
+      .cal-view-btn { display:inline-flex; }
+      .cal-header-bar { flex-direction:column; align-items:flex-start; }
+      .cal-nav h2 { min-width:auto; font-size:1rem; }
+    }
   </style>
 </head>
 <body>
@@ -42,22 +66,33 @@
       <button class="btn btn-secondary btn-sm" id="btn-next-m">▶</button>
       <button class="btn btn-ghost btn-sm" id="btn-oggi">Oggi</button>
     </div>
-    <div class="cal-stats">
-      <div class="stat-item"><div class="stat-val" id="st-mese">—</div><div class="stat-lbl">questo mese</div></div>
-      <div class="stat-item"><div class="stat-val" id="st-attesa">—</div><div class="stat-lbl">in attesa</div></div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div class="cal-stats">
+        <div class="stat-item"><div class="stat-val" id="st-mese">—</div><div class="stat-lbl">questo mese</div></div>
+        <div class="stat-item"><div class="stat-val" id="st-attesa">—</div><div class="stat-lbl">in attesa</div></div>
+      </div>
+      <div class="cal-view-btn" style="gap:.4rem;display:none" id="view-toggle">
+        <button class="btn btn-secondary btn-sm active" id="btn-v-griglia" onclick="setVista('griglia')" title="Vista mese">📅</button>
+        <button class="btn btn-secondary btn-sm" id="btn-v-lista" onclick="setVista('lista')" title="Vista lista">☰</button>
+      </div>
     </div>
   </div>
 
   <div id="alert-cal"></div>
 
-  <div class="cal-grid" id="cal-grid">
-    <div class="cal-day-header">Lun</div>
-    <div class="cal-day-header">Mar</div>
-    <div class="cal-day-header">Mer</div>
-    <div class="cal-day-header">Gio</div>
-    <div class="cal-day-header">Ven</div>
-    <div class="cal-day-header">Sab</div>
-    <div class="cal-day-header">Dom</div>
+  <div id="cal-grid-wrap">
+    <div class="cal-grid" id="cal-grid">
+      <div class="cal-day-header">Lun</div>
+      <div class="cal-day-header">Mar</div>
+      <div class="cal-day-header">Mer</div>
+      <div class="cal-day-header">Gio</div>
+      <div class="cal-day-header">Ven</div>
+      <div class="cal-day-header">Sab</div>
+      <div class="cal-day-header">Dom</div>
+    </div>
+  </div>
+  <div id="cal-list-wrap" class="hidden">
+    <div class="cal-list" id="cal-list"></div>
   </div>
 </div>
 
@@ -70,12 +105,14 @@
     </div>
     <div class="modal-body">
       <div id="alert-modal"></div>
-      <div class="form-group" style="position:relative">
+      <div class="form-group">
         <label>Paziente</label>
-        <input type="text" id="search-paziente" placeholder="Cerca per nome o cognome..." autocomplete="off">
-        <div class="search-paziente-results hidden" id="search-results"></div>
+        <div class="paziente-field-wrap" style="position:relative">
+          <input type="text" id="search-paziente" placeholder="Cerca o seleziona paziente..." autocomplete="off">
+          <button type="button" class="btn btn-icon hidden" id="btn-clear-paz" title="Rimuovi selezione" style="flex-shrink:0;font-size:1rem;padding:.35rem .55rem">×</button>
+          <div class="search-paziente-results hidden" id="search-results"></div>
+        </div>
         <input type="hidden" id="paziente-id-hidden">
-        <div id="paziente-selezionato" class="text-muted mt-1"></div>
       </div>
       <div class="form-group">
         <label>Tipo visita</label>
@@ -133,7 +170,7 @@ async function caricaMese() {
   document.getElementById('mese-title').textContent = `${nomeMese(mese-1)} ${anno}`;
   try {
     appuntamenti = await api(`/api/appuntamenti/mese/${anno}/${mese}`);
-    renderCalendario();
+    if (vistaCorrente === 'lista') { renderLista(); } else { renderCalendario(); }
     aggiornaStats();
   } catch(e) {}
 }
@@ -230,8 +267,7 @@ async function apriModifica(id) {
   document.getElementById('app-stato').value = a.stato;
   document.getElementById('app-note').value  = a.note || '';
   if (a.paziente_id) {
-    document.getElementById('paziente-id-hidden').value = a.paziente_id;
-    document.getElementById('paziente-selezionato').textContent = '✓ ' + a.nome_display;
+    setPazienteSelezionato(a.paziente_id, a.nome_display);
   }
   openModal('modal-nuovo');
 }
@@ -239,8 +275,9 @@ async function apriModifica(id) {
 function resetModal() {
   document.getElementById('alert-modal').innerHTML = '';
   document.getElementById('search-paziente').value = '';
+  document.getElementById('search-paziente').style.fontWeight = 'normal';
   document.getElementById('paziente-id-hidden').value = '';
-  document.getElementById('paziente-selezionato').textContent = '';
+  document.getElementById('btn-clear-paz').classList.add('hidden');
   document.getElementById('search-results').classList.add('hidden');
   document.getElementById('app-data').value = '';
   document.getElementById('app-ora').value = '';
@@ -250,31 +287,68 @@ function resetModal() {
   document.getElementById('app-note').value = '';
 }
 
-/* ── Ricerca paziente nel modal ──────────────────────────────────────────── */
+function setPazienteSelezionato(id, label) {
+  document.getElementById('paziente-id-hidden').value = id;
+  document.getElementById('search-paziente').value = label;
+  document.getElementById('search-paziente').style.fontWeight = '600';
+  document.getElementById('btn-clear-paz').classList.remove('hidden');
+  document.getElementById('search-results').classList.add('hidden');
+}
+
+/* ── Ricerca paziente nel modal (combobox) ───────────────────────────────── */
 let searchTimer2;
-document.getElementById('search-paziente').addEventListener('input', e => {
-  clearTimeout(searchTimer2);
-  const q = e.target.value.trim();
-  if (q.length < 2) { document.getElementById('search-results').classList.add('hidden'); return; }
-  searchTimer2 = setTimeout(async () => {
-    const res = await api(`/api/pazienti?q=${encodeURIComponent(q)}&limit=10`);
+
+async function mostraPazienti(q) {
+  const url = q.length >= 1
+    ? `/api/pazienti?q=${encodeURIComponent(q)}&limit=15`
+    : '/api/pazienti?limit=25';
+  try {
+    const res = await api(url);
     const box = document.getElementById('search-results');
     box.innerHTML = '';
-    if (!res.pazienti.length) { box.classList.add('hidden'); return; }
-    res.pazienti.forEach(p => {
-      const d = document.createElement('div');
-      d.className = 'search-item';
-      d.textContent = `${p.cognome} ${p.nome}${p.data_nascita?' ('+fmtData(p.data_nascita)+')':''}`;
-      d.addEventListener('click', () => {
-        document.getElementById('paziente-id-hidden').value = p.id;
-        document.getElementById('paziente-selezionato').textContent = `✓ ${p.cognome} ${p.nome}`;
-        document.getElementById('search-paziente').value = '';
-        box.classList.add('hidden');
+    if (!res || !res.pazienti.length) {
+      box.innerHTML = '<div class="search-item" style="color:#bbb;cursor:default">Nessun paziente trovato</div>';
+    } else {
+      res.pazienti.forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'search-item';
+        d.textContent = `${p.cognome} ${p.nome}${p.data_nascita ? ' · ' + fmtData(p.data_nascita) : ''}`;
+        d.addEventListener('mousedown', e => {
+          e.preventDefault();
+          setPazienteSelezionato(p.id, `${p.cognome} ${p.nome}`);
+        });
+        box.appendChild(d);
       });
-      box.appendChild(d);
-    });
+    }
     box.classList.remove('hidden');
-  }, 300);
+  } catch(e) {}
+}
+
+const elSearchPaz = document.getElementById('search-paziente');
+
+elSearchPaz.addEventListener('focus', () => {
+  if (document.getElementById('paziente-id-hidden').value) return;
+  mostraPazienti(elSearchPaz.value.trim());
+});
+
+elSearchPaz.addEventListener('input', e => {
+  clearTimeout(searchTimer2);
+  document.getElementById('paziente-id-hidden').value = '';
+  document.getElementById('search-paziente').style.fontWeight = 'normal';
+  document.getElementById('btn-clear-paz').classList.add('hidden');
+  searchTimer2 = setTimeout(() => mostraPazienti(e.target.value.trim()), 250);
+});
+
+elSearchPaz.addEventListener('blur', () => {
+  setTimeout(() => document.getElementById('search-results').classList.add('hidden'), 180);
+});
+
+document.getElementById('btn-clear-paz').addEventListener('click', () => {
+  document.getElementById('paziente-id-hidden').value = '';
+  document.getElementById('search-paziente').value = '';
+  document.getElementById('search-paziente').style.fontWeight = 'normal';
+  document.getElementById('btn-clear-paz').classList.add('hidden');
+  elSearchPaz.focus();
 });
 
 /* ── Salva appuntamento ───────────────────────────────────────────────────── */
@@ -311,6 +385,64 @@ document.getElementById('btn-elimina-app').addEventListener('click', async () =>
   } catch(e) { alert(e.message); }
 });
 
+/* ── Vista lista (mobile) ──────────────────────────────────────────────── */
+let vistaCorrente = 'griglia';
+
+function setVista(v) {
+  vistaCorrente = v;
+  document.getElementById('cal-grid-wrap').classList.toggle('hidden', v === 'lista');
+  document.getElementById('cal-list-wrap').classList.toggle('hidden', v === 'griglia');
+  document.getElementById('btn-v-griglia').classList.toggle('active', v === 'griglia');
+  document.getElementById('btn-v-lista').classList.toggle('active', v === 'lista');
+  if (v === 'lista') renderLista();
+}
+
+function renderLista() {
+  const list = document.getElementById('cal-list');
+  list.innerHTML = '';
+  const ultimoGiorno = new Date(anno, mese, 0).getDate();
+  const oggi = new Date();
+
+  for (let g = 1; g <= ultimoGiorno; g++) {
+    const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
+    const d = new Date(anno, mese-1, g);
+    const isOggi = oggi.getFullYear()===anno && oggi.getMonth()===mese-1 && oggi.getDate()===g;
+    const appGiorno = appuntamenti.filter(a => a.data_ora.startsWith(dataStr));
+
+    const dayEl = document.createElement('div');
+    dayEl.className = 'cal-list-day' + (isOggi ? ' oggi' : '');
+    if (isOggi) dayEl.style.borderColor = 'var(--giallo)';
+
+    const nomeG = nomeGiorno(d.getDay() === 0 ? 6 : d.getDay() - 1);
+    const hdr = document.createElement('div');
+    hdr.className = 'cal-list-day-hdr';
+    hdr.innerHTML = `<span class="cal-list-day-nome">${nomeG} ${g} ${nomeMese(mese-1).toLowerCase()}</span>
+      <span class="cal-list-day-n">${appGiorno.length ? appGiorno.length + ' appt' : '+ Aggiungi'}</span>`;
+    hdr.addEventListener('click', () => apriNuovo(dataStr));
+    dayEl.appendChild(hdr);
+
+    if (appGiorno.length) {
+      appGiorno.forEach(a => {
+        const ev = document.createElement('div');
+        ev.className = 'cal-list-event';
+        ev.innerHTML = `<div class="cal-list-dot" style="background:${a.tipo_visita_colore||'#0F6E56'}"></div>
+          <div class="cal-list-info">
+            <div style="font-weight:600">${a.nome_display}</div>
+            <div class="cal-list-ora">${a.data_ora.slice(11,16)}${a.tipo_visita_nome ? ' · '+a.tipo_visita_nome : ''}</div>
+          </div>`;
+        ev.addEventListener('click', e => { e.stopPropagation(); apriModifica(a.id); });
+        dayEl.appendChild(ev);
+      });
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'cal-list-empty';
+      empty.textContent = 'Nessun appuntamento';
+      dayEl.appendChild(empty);
+    }
+    list.appendChild(dayEl);
+  }
+}
+
 /* ── Nav mese ─────────────────────────────────────────────────────────────── */
 document.getElementById('btn-prev-m').addEventListener('click', () => {
   mese--; if (mese<1){ mese=12; anno--; } caricaMese();
@@ -324,6 +456,14 @@ document.getElementById('btn-oggi').addEventListener('click', () => {
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 initModalClose();
+
+// Su mobile, attiva lista di default
+if (window.matchMedia('(max-width: 768px)').matches) {
+  document.getElementById('view-toggle').style.display = 'flex';
+  setVista('lista');
+} else {
+  document.getElementById('view-toggle').style.display = 'none';
+}
 
 (async () => {
   // Tipi visita

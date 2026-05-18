@@ -17,7 +17,7 @@
 <body class="index-body">
   <div class="index-header">
     <h1 id="nome-medico">Studio Orlandi</h1>
-    <p class="spec" id="specializzazioni"></p>
+    <div id="specializzazioni"></div>
     <p class="spec" id="testo-home"></p>
     <ul class="servizi-list" id="servizi-list"></ul>
   </div>
@@ -44,7 +44,10 @@
       try {
         const info = await api('/api/prenota/info-studio');
         document.getElementById('nome-medico').textContent = info.nome_medico;
-        document.getElementById('specializzazioni').textContent = info.specializzazioni;
+        const specEl = document.getElementById('specializzazioni');
+        (info.specializzazioni || '').split('\n').filter(Boolean).forEach(s => {
+          const p = document.createElement('p'); p.className = 'spec'; p.textContent = s; specEl.appendChild(p);
+        });
         document.getElementById('testo-home').textContent = info.testo_home;
         const sl = document.getElementById('servizi-list');
         (info.servizi || '').split('\n').filter(Boolean).forEach(s => {
