@@ -40,6 +40,13 @@
     .cal-list-ora { font-size:.75rem; color:#888; }
     .cal-list-empty { padding:.6rem 1rem; font-size:.82rem; color:#bbb; border-top:1px solid var(--grigio-bordo); }
     .cal-view-btn { display:none; }
+    /* Fix 17: giorni senza ambulatorio */
+    .cal-cell.no-disp { opacity:.38; background:#f9f9f9; cursor:default !important; }
+    .cal-cell.no-disp:hover { background:#f9f9f9; }
+    .cal-list-day.no-disp { opacity:.38; }
+    .cal-list-day.no-disp .cal-list-day-hdr { cursor:default; }
+    /* Ora slot */
+    .ora-custom-wrap { margin-top:.35rem; }
     @media (max-width: 768px) {
       .cal-view-btn { display:inline-flex; }
       .cal-header-bar { flex-direction:column; align-items:flex-start; }
@@ -54,7 +61,7 @@
     <h1>Calendario Appuntamenti</h1>
   </div>
   <div class="header-actions">
-    <button class="btn btn-primary btn-sm" onclick="openModal('modal-nuovo')">+ Nuovo appuntamento</button>
+    <button class="btn btn-primary btn-sm" id="btn-nuovo-hdr">+ Nuovo appuntamento</button>
   </div>
 </header>
 
@@ -125,7 +132,12 @@
         </div>
         <div class="form-group">
           <label>Ora</label>
-          <input type="time" id="app-ora" step="300">
+          <select id="app-ora-sel">
+            <option value="">— Prima seleziona data —</option>
+          </select>
+          <div class="ora-custom-wrap hidden" id="app-ora-custom-wrap">
+            <input type="time" id="app-ora" step="300" style="width:100%">
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -163,7 +175,15 @@ let mese = new Date().getMonth() + 1;
 let appuntamenti = [];
 let tipiVisita = [];
 let sedi = [];
+let disponibilita = [];
+let dispSet = new Set();
 let appCorrenteId = null;
+
+/* ── Fix 8: data di oggi come stringa ISO ─────────────────────────────────── */
+function dataOggiISO() {
+  const o = new Date();
+  return `${o.getFullYear()}-${String(o.getMonth()+1).padStart(2,'0')}-${String(o.getDate()).padStart(2,'0')}`;
+}
 
 /* ── Calendario ──────────────────────────────────────────────────────────── */
 async function caricaMese() {
@@ -177,18 +197,15 @@ async function caricaMese() {
 
 function renderCalendario() {
   const grid = document.getElementById('cal-grid');
-  // Rimuovi celle vecchie (tieni gli header)
   while (grid.children.length > 7) grid.removeChild(grid.lastChild);
 
   const primoGiorno = new Date(anno, mese-1, 1);
   const ultimoGiorno = new Date(anno, mese, 0);
   const oggi = new Date();
 
-  // Offset: lunedì=0
   let offset = primoGiorno.getDay() - 1;
   if (offset < 0) offset = 6;
 
-  // Celle vuote mese precedente
   for (let i = 0; i < offset; i++) {
     const cell = document.createElement('div');
     cell.className = 'cal-cell fuori-mese';
@@ -197,14 +214,25 @@ function renderCalendario() {
     grid.appendChild(cell);
   }
 
-  // Celle del mese
   for (let g = 1; g <= ultimoGiorno.getDate(); g++) {
     const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
     const isOggi = oggi.getFullYear()===anno && oggi.getMonth()===mese-1 && oggi.getDate()===g;
+    const d = new Date(anno, mese-1, g);
+    const dow = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Lun
+    const hasDisp = dispSet.size === 0 || dispSet.has(dow);
+
     const cell = document.createElement('div');
-    cell.className = 'cal-cell' + (isOggi ? ' oggi' : '');
     cell.dataset.data = dataStr;
 
+    if (!hasDisp) {
+      // Fix 17: giorno senza ambulatorio
+      cell.className = 'cal-cell no-disp' + (isOggi ? ' oggi' : '');
+      cell.innerHTML = `<div class="cal-day-num">${g}</div>`;
+      grid.appendChild(cell);
+      continue;
+    }
+
+    cell.className = 'cal-cell' + (isOggi ? ' oggi' : '');
     const appGiorno = appuntamenti.filter(a => a.data_ora.startsWith(dataStr));
     const MAX = 3;
     let html = `<div class="cal-day-num">${g}</div>`;
@@ -226,7 +254,6 @@ function renderCalendario() {
     grid.appendChild(cell);
   }
 
-  // Celle vuote mese successivo
   const totale = offset + ultimoGiorno.getDate();
   const righe = Math.ceil(totale / 7);
   const celle = righe * 7;
@@ -249,7 +276,10 @@ function apriNuovo(dataStr = '') {
   document.getElementById('modal-title').textContent = 'Nuovo appuntamento';
   document.getElementById('btn-elimina-app').classList.add('hidden');
   resetModal();
-  if (dataStr) document.getElementById('app-data').value = dataStr;
+  if (dataStr) {
+    document.getElementById('app-data').value = dataStr;
+    aggiornaSlotOra();
+  }
   openModal('modal-nuovo');
 }
 
@@ -260,15 +290,16 @@ async function apriModifica(id) {
   resetModal();
   const a = appuntamenti.find(x => x.id === id);
   if (!a) return;
-  document.getElementById('app-data').value = a.data_ora.slice(0,10);
-  document.getElementById('app-ora').value  = a.data_ora.slice(11,16);
+  const dataStr = a.data_ora.slice(0,10);
+  const oraStr  = a.data_ora.slice(11,16);
+  document.getElementById('app-data').value = dataStr;
   document.getElementById('tipo-visita-sel').value = a.tipo_visita_id || '';
   document.getElementById('sede-sel').value  = a.sede_id || '';
   document.getElementById('app-stato').value = a.stato;
   document.getElementById('app-note').value  = a.note || '';
-  if (a.paziente_id) {
-    setPazienteSelezionato(a.paziente_id, a.nome_display);
-  }
+  if (a.paziente_id) setPazienteSelezionato(a.paziente_id, a.nome_display);
+  // Carica slot per la data, poi seleziona l'ora corrente
+  await aggiornaSlotOra(oraStr);
   openModal('modal-nuovo');
 }
 
@@ -280,7 +311,9 @@ function resetModal() {
   document.getElementById('btn-clear-paz').classList.add('hidden');
   document.getElementById('search-results').classList.add('hidden');
   document.getElementById('app-data').value = '';
+  document.getElementById('app-ora-sel').innerHTML = '<option value="">— Prima seleziona data —</option>';
   document.getElementById('app-ora').value = '';
+  document.getElementById('app-ora-custom-wrap').classList.add('hidden');
   document.getElementById('tipo-visita-sel').value = '';
   document.getElementById('sede-sel').value = '';
   document.getElementById('app-stato').value = 'confermato';
@@ -294,6 +327,63 @@ function setPazienteSelezionato(id, label) {
   document.getElementById('btn-clear-paz').classList.remove('hidden');
   document.getElementById('search-results').classList.add('hidden');
 }
+
+/* ── Fix 16: slot orario nel modal medico ────────────────────────────────── */
+async function aggiornaSlotOra(oraPreselezionata = '') {
+  const data  = document.getElementById('app-data').value;
+  const tvId  = document.getElementById('tipo-visita-sel').value;
+  const sel   = document.getElementById('app-ora-sel');
+  if (!data) return;
+
+  const durata = tvId
+    ? (tipiVisita.find(tv => tv.id === parseInt(tvId))?.durata_minuti || 30)
+    : 30;
+
+  sel.innerHTML = '<option value="">Caricamento...</option>';
+  try {
+    const res = await api(`/api/appuntamenti/slot-liberi?data=${data}&durata_minuti=${durata}`);
+    sel.innerHTML = '';
+    if (!res.ha_disponibilita) {
+      sel.innerHTML = '<option value="">⚠ Giorno senza ambulatorio</option>';
+    } else {
+      if (oraPreselezionata) {
+        const opt = document.createElement('option');
+        opt.value = oraPreselezionata;
+        opt.textContent = `${oraPreselezionata} (attuale)`;
+        opt.selected = true;
+        sel.appendChild(opt);
+      } else {
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = '— Seleziona orario —';
+        sel.appendChild(blank);
+      }
+      res.slot.forEach(ora => {
+        if (ora === oraPreselezionata) return;
+        const o = document.createElement('option');
+        o.value = ora; o.textContent = ora;
+        sel.appendChild(o);
+      });
+      if (!res.slot.length && !oraPreselezionata) {
+        sel.innerHTML = '<option value="">Nessuno slot libero</option>';
+      }
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Errore slot</option>';
+  }
+  // Opzione orario personalizzato
+  const custom = document.createElement('option');
+  custom.value = 'custom'; custom.textContent = '⌨ Orario personalizzato...';
+  sel.appendChild(custom);
+  document.getElementById('app-ora-custom-wrap').classList.add('hidden');
+}
+
+document.getElementById('app-data').addEventListener('change', () => aggiornaSlotOra());
+document.getElementById('tipo-visita-sel').addEventListener('change', () => aggiornaSlotOra());
+
+document.getElementById('app-ora-sel').addEventListener('change', function() {
+  document.getElementById('app-ora-custom-wrap').classList.toggle('hidden', this.value !== 'custom');
+});
 
 /* ── Ricerca paziente nel modal (combobox) ───────────────────────────────── */
 let searchTimer2;
@@ -355,8 +445,12 @@ document.getElementById('btn-clear-paz').addEventListener('click', () => {
 document.getElementById('btn-salva-app').addEventListener('click', async () => {
   const alertM = document.getElementById('alert-modal');
   const data = document.getElementById('app-data').value;
-  const ora  = document.getElementById('app-ora').value;
-  if (!data || !ora) { alertM.innerHTML='<div class="alert alert-error">Data e ora obbligatorie</div>'; return; }
+  const oraSel = document.getElementById('app-ora-sel').value;
+  const ora = oraSel === 'custom' ? document.getElementById('app-ora').value : oraSel;
+  if (!data || !ora) {
+    alertM.innerHTML='<div class="alert alert-error">Data e ora obbligatorie</div>';
+    return;
+  }
   const body = {
     data_ora: `${data}T${ora}:00`,
     tipo_visita_id: parseInt(document.getElementById('tipo-visita-sel').value) || null,
@@ -407,9 +501,25 @@ function renderLista() {
     const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
     const d = new Date(anno, mese-1, g);
     const isOggi = oggi.getFullYear()===anno && oggi.getMonth()===mese-1 && oggi.getDate()===g;
+    const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    const hasDisp = dispSet.size === 0 || dispSet.has(dow);
     const appGiorno = appuntamenti.filter(a => a.data_ora.startsWith(dataStr));
 
     const dayEl = document.createElement('div');
+
+    if (!hasDisp) {
+      // Fix 17: giorno senza ambulatorio in lista
+      dayEl.className = 'cal-list-day no-disp';
+      const nomeG = nomeGiorno(d.getDay() === 0 ? 6 : d.getDay() - 1);
+      const hdr = document.createElement('div');
+      hdr.className = 'cal-list-day-hdr';
+      hdr.innerHTML = `<span class="cal-list-day-nome">${nomeG} ${g} ${nomeMese(mese-1).toLowerCase()}</span>
+        <span class="cal-list-day-n" style="color:#aaa">chiuso</span>`;
+      dayEl.appendChild(hdr);
+      list.appendChild(dayEl);
+      continue;
+    }
+
     dayEl.className = 'cal-list-day' + (isOggi ? ' oggi' : '');
     if (isOggi) dayEl.style.borderColor = 'var(--giallo)';
 
@@ -441,6 +551,10 @@ function renderLista() {
     }
     list.appendChild(dayEl);
   }
+
+  // Fix 8: scorri automaticamente a oggi
+  const oggiEl = list.querySelector('.cal-list-day.oggi');
+  if (oggiEl) setTimeout(() => oggiEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
 }
 
 /* ── Nav mese ─────────────────────────────────────────────────────────────── */
@@ -453,11 +567,12 @@ document.getElementById('btn-next-m').addEventListener('click', () => {
 document.getElementById('btn-oggi').addEventListener('click', () => {
   anno=new Date().getFullYear(); mese=new Date().getMonth()+1; caricaMese();
 });
+// Fix 8: pulsante header apre modal con data odierna
+document.getElementById('btn-nuovo-hdr').addEventListener('click', () => apriNuovo(dataOggiISO()));
 
 /* ── Init ─────────────────────────────────────────────────────────────────── */
 initModalClose();
 
-// Su mobile, attiva lista di default
 if (window.matchMedia('(max-width: 768px)').matches) {
   document.getElementById('view-toggle').style.display = 'flex';
   setVista('lista');
@@ -466,7 +581,12 @@ if (window.matchMedia('(max-width: 768px)').matches) {
 }
 
 (async () => {
-  // Tipi visita
+  // Fix 17: carica disponibilità per graying dei giorni
+  try {
+    disponibilita = await api('/api/disponibilita');
+    dispSet = new Set(disponibilita.filter(d => d.attivo).map(d => d.giorno_settimana));
+  } catch(e) {}
+
   try {
     tipiVisita = await api('/api/tipi-visita');
     const sel = document.getElementById('tipo-visita-sel');
@@ -476,7 +596,7 @@ if (window.matchMedia('(max-width: 768px)').matches) {
       sel.appendChild(o);
     });
   } catch(e) {}
-  // Sedi
+
   try {
     sedi = await api('/api/sedi');
     const sel = document.getElementById('sede-sel');
@@ -486,6 +606,7 @@ if (window.matchMedia('(max-width: 768px)').matches) {
       sel.appendChild(o);
     });
   } catch(e) {}
+
   caricaMese();
 })();
 </script>

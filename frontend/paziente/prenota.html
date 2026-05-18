@@ -23,11 +23,26 @@
     .sede-card-pub { border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm);
                      padding:.75rem 1rem; margin-bottom:.5rem; font-size:.88rem; }
     .autocomplete-res { position:absolute; background:#fff; border:1.5px solid var(--grigio-bordo);
-                         border-radius:var(--radius-sm); z-index:100; width:100%; max-height:180px; overflow-y:auto; top:100%; left:0; }
+                        border-radius:var(--radius-sm); z-index:100; width:100%; max-height:180px;
+                        overflow-y:auto; top:100%; left:0; }
     .autocomplete-item { padding:.5rem .75rem; cursor:pointer; font-size:.87rem; }
     .autocomplete-item:hover { background:var(--verde-chiaro); }
     .success-box { text-align:center; padding:2rem; }
     .success-icon { font-size:3.5rem; margin-bottom:1rem; }
+    /* Fix 10: pulsante Continua fisso in fondo su mobile */
+    @media (max-width: 640px) {
+      .wizard-nav {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: #fff;
+        border-top: 1px solid var(--grigio-bordo);
+        padding: .85rem 1.25rem;
+        margin-top: 0;
+        box-shadow: 0 -3px 12px rgba(0,0,0,.08);
+        z-index: 100;
+      }
+      .wizard-card { padding-bottom: 5rem; }
+    }
   </style>
 </head>
 <body>
@@ -91,24 +106,25 @@
     <div class="wizard-panel" id="panel-3">
       <h2 style="margin-bottom:1rem">Dati personali</h2>
 
-      <!-- Autocompletamento -->
+      <!-- Fix 9: Nome prima, Cognome dopo -->
       <div class="form-row" style="position:relative">
-        <div class="form-group" style="position:relative">
-          <label>Cognome *</label>
-          <input id="p-cognome" required autocomplete="off">
-        </div>
         <div class="form-group" style="position:relative">
           <label>Nome *</label>
           <input id="p-nome" required autocomplete="off">
           <div class="autocomplete-res hidden" id="autocomplete-res"></div>
         </div>
+        <div class="form-group" style="position:relative">
+          <label>Cognome *</label>
+          <input id="p-cognome" required autocomplete="off">
+        </div>
       </div>
       <div id="autocomplete-msg" class="text-muted hidden" style="font-size:.82rem;margin-bottom:.75rem"></div>
 
+      <!-- Fix 15: data nascita testo gg/mm/aaaa -->
       <div class="form-row">
         <div class="form-group">
           <label>Data di nascita</label>
-          <input id="p-data-nascita" type="date">
+          <input id="p-data-nascita" type="text" placeholder="gg/mm/aaaa" maxlength="10" inputmode="numeric">
         </div>
         <div class="form-group">
           <label>Sesso</label>
@@ -116,14 +132,23 @@
         </div>
       </div>
 
+      <!-- Fix 14: provincia/comune con ricerca testo -->
       <div class="form-row">
         <div class="form-group">
           <label>Provincia di nascita</label>
-          <select id="p-prov-nascita"><option value="">— Seleziona —</option></select>
+          <div style="position:relative">
+            <input id="p-prov-nascita-text" placeholder="Digita sigla o nome..." autocomplete="off">
+            <input type="hidden" id="p-prov-nascita">
+            <div class="autocomplete-res hidden" id="prov-res"></div>
+          </div>
         </div>
         <div class="form-group">
           <label>Comune di nascita</label>
-          <select id="p-comune-nascita"><option value="">— Prima seleziona provincia —</option></select>
+          <div style="position:relative">
+            <input id="p-comune-nascita-text" placeholder="Prima seleziona provincia..." autocomplete="off" disabled>
+            <input type="hidden" id="p-comune-nascita">
+            <div class="autocomplete-res hidden" id="comune-res"></div>
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -201,9 +226,20 @@
 <script src="/assets/app.js"></script>
 <script>
 let stepCorrente = 1;
-let tipoSelezionato = null;   // {id, nome, durata_minuti}
-let slotSelezionato = null;   // {data, ora}  → "2024-03-15T10:30"
+let tipoSelezionato = null;
+let slotSelezionato = null;
 let provinceCaricate = false;
+
+/* ── Fix 15: helpers data gg/mm/aaaa ────────────────────────────────────── */
+function ddmmyyyyToISO(s) {
+  const m = s && s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+function isoToDDMMYYYY(s) {
+  if (!s) return '';
+  const p = s.split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
+}
 
 function goStep(n) {
   [1,2,3,4,'ok'].forEach(s => {
@@ -261,7 +297,9 @@ function goStep(n) {
       });
       cont.appendChild(card);
     });
-  } catch(e) { document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Errore caricamento servizi</div>'; }
+  } catch(e) {
+    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Errore caricamento servizi</div>';
+  }
 })();
 
 document.getElementById('btn-step1-next').addEventListener('click', async () => {
@@ -313,28 +351,119 @@ document.getElementById('btn-step2-back').addEventListener('click', () => goStep
 document.getElementById('btn-step2-next').addEventListener('click', () => {
   goStep(3);
   if (!provinceCaricate) {
-    caricaProvince(document.getElementById('p-prov-nascita')).then(() => { provinceCaricate = true; });
+    initProvinceCombobox().then(() => { provinceCaricate = true; });
   }
 });
 
 /* ── Step 3: Dati paziente ───────────────────────────────────────────────── */
-// Cascata provincia → comune
-document.getElementById('p-prov-nascita').addEventListener('change', function() {
-  const selCom = document.getElementById('p-comune-nascita');
-  if (this.value) caricaComuni(this.value, selCom);
-  else selCom.innerHTML = '<option value="">— Prima seleziona provincia —</option>';
+
+/* Fix 14: combobox province ─────────────────────────────────────────────── */
+let provinceCache = [];
+let comuniCache   = [];
+
+async function initProvinceCombobox() {
+  try { provinceCache = await api('/api/comuni/province'); } catch(e) {}
+}
+
+function mostraProvince(q) {
+  const box = document.getElementById('prov-res');
+  const lower = q.toLowerCase();
+  const filtered = q.length >= 1
+    ? provinceCache.filter(p =>
+        p.sigla.toLowerCase().startsWith(lower) ||
+        p.nome.toLowerCase().includes(lower)
+      ).slice(0, 15)
+    : provinceCache.slice(0, 20);
+
+  if (!filtered.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = '';
+  filtered.forEach(p => {
+    const d = document.createElement('div');
+    d.className = 'autocomplete-item';
+    d.textContent = `${p.sigla} — ${p.nome}`;
+    d.addEventListener('mousedown', async e => {
+      e.preventDefault();
+      document.getElementById('p-prov-nascita-text').value = `${p.sigla} — ${p.nome}`;
+      document.getElementById('p-prov-nascita').value = p.sigla;
+      box.classList.add('hidden');
+      await caricaComuniCombobox(p.sigla);
+    });
+    box.appendChild(d);
+  });
+  box.classList.remove('hidden');
+}
+
+document.getElementById('p-prov-nascita-text').addEventListener('focus', function() {
+  mostraProvince(this.value.trim());
+});
+document.getElementById('p-prov-nascita-text').addEventListener('input', function() {
+  document.getElementById('p-prov-nascita').value = '';
+  document.getElementById('p-comune-nascita-text').value = '';
+  document.getElementById('p-comune-nascita').value = '';
+  comuniCache = [];
+  mostraProvince(this.value.trim());
+});
+document.getElementById('p-prov-nascita-text').addEventListener('blur', () => {
+  setTimeout(() => document.getElementById('prov-res').classList.add('hidden'), 180);
 });
 
-// CF auto
-['p-cognome','p-nome','p-data-nascita','p-sesso'].forEach(id => {
-  document.getElementById(id).addEventListener('change', ricalcolaCFPub);
-});
-document.getElementById('p-comune-nascita').addEventListener('change', ricalcolaCFPub);
+async function caricaComuniCombobox(sigla) {
+  const inputComune = document.getElementById('p-comune-nascita-text');
+  inputComune.value = '';
+  document.getElementById('p-comune-nascita').value = '';
+  inputComune.disabled = true;
+  inputComune.placeholder = 'Caricamento...';
+  try {
+    comuniCache = await api(`/api/comuni/${sigla}`);
+    inputComune.disabled = false;
+    inputComune.placeholder = 'Digita nome comune...';
+  } catch(e) {
+    inputComune.placeholder = 'Errore caricamento';
+    comuniCache = [];
+  }
+}
 
+function mostraComuni(q) {
+  const box = document.getElementById('comune-res');
+  const lower = q.toLowerCase();
+  const filtered = q.length >= 1
+    ? comuniCache.filter(c => c.nome.toLowerCase().startsWith(lower)).slice(0, 20)
+    : comuniCache.slice(0, 15);
+
+  if (!filtered.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = '';
+  filtered.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'autocomplete-item';
+    d.textContent = c.nome;
+    d.addEventListener('mousedown', e => {
+      e.preventDefault();
+      document.getElementById('p-comune-nascita-text').value = c.nome;
+      document.getElementById('p-comune-nascita').value = c.codice_istat;
+      box.classList.add('hidden');
+      ricalcolaCFPub();
+    });
+    box.appendChild(d);
+  });
+  box.classList.remove('hidden');
+}
+
+document.getElementById('p-comune-nascita-text').addEventListener('focus', function() {
+  mostraComuni(this.value.trim());
+});
+document.getElementById('p-comune-nascita-text').addEventListener('input', function() {
+  document.getElementById('p-comune-nascita').value = '';
+  mostraComuni(this.value.trim());
+});
+document.getElementById('p-comune-nascita-text').addEventListener('blur', () => {
+  setTimeout(() => document.getElementById('comune-res').classList.add('hidden'), 180);
+});
+
+/* Fix 15: CF auto con data testo ─────────────────────────────────────────── */
 function ricalcolaCFPub() {
   const cognome = document.getElementById('p-cognome').value;
   const nome    = document.getElementById('p-nome').value;
-  const dn      = document.getElementById('p-data-nascita').value;
+  const dn      = ddmmyyyyToISO(document.getElementById('p-data-nascita').value);
   const sesso   = document.getElementById('p-sesso').value;
   const codice  = document.getElementById('p-comune-nascita').value;
   if (cognome && nome && dn && sesso && codice) {
@@ -342,7 +471,21 @@ function ricalcolaCFPub() {
   }
 }
 
-// Autocompletamento paziente esistente
+// Auto-slash per data di nascita
+document.getElementById('p-data-nascita').addEventListener('input', function() {
+  let raw = this.value.replace(/\D/g, '').slice(0, 8);
+  let out = raw;
+  if (raw.length > 4) out = raw.slice(0,2) + '/' + raw.slice(2,4) + '/' + raw.slice(4);
+  else if (raw.length > 2) out = raw.slice(0,2) + '/' + raw.slice(2);
+  this.value = out;
+  ricalcolaCFPub();
+});
+
+['p-cognome','p-nome','p-sesso'].forEach(id => {
+  document.getElementById(id).addEventListener('change', ricalcolaCFPub);
+});
+
+/* Autocompletamento paziente esistente ───────────────────────────────────── */
 let autoTimer;
 function triggerAutocompletamento() {
   clearTimeout(autoTimer);
@@ -359,7 +502,7 @@ function triggerAutocompletamento() {
       res.forEach(p => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
-        item.textContent = `${p.cognome} ${p.nome}${p.data_nascita ? ' · '+fmtData(p.data_nascita) : ''}`;
+        item.textContent = `${p.nome} ${p.cognome}${p.data_nascita ? ' · '+isoToDDMMYYYY(p.data_nascita) : ''}`;
         item.addEventListener('click', () => {
           precompilaPaziente(p);
           box.classList.add('hidden');
@@ -375,8 +518,9 @@ function triggerAutocompletamento() {
 document.getElementById('p-nome').addEventListener('input', triggerAutocompletamento);
 document.getElementById('p-cognome').addEventListener('input', triggerAutocompletamento);
 
-function precompilaPaziente(p) {
-  document.getElementById('p-data-nascita').value = p.data_nascita || '';
+async function precompilaPaziente(p) {
+  // Fix 15: converti ISO → gg/mm/aaaa
+  document.getElementById('p-data-nascita').value = isoToDDMMYYYY(p.data_nascita);
   document.getElementById('p-sesso').value        = p.sesso || '';
   document.getElementById('p-cf').value           = p.codice_fiscale || '';
   document.getElementById('p-citta').value        = p.citta_residenza || '';
@@ -384,21 +528,35 @@ function precompilaPaziente(p) {
   document.getElementById('p-telefono').value     = p.telefono || '';
   document.getElementById('p-email').value        = p.email || '';
   if (p.provincia_nascita) {
-    const selProv = document.getElementById('p-prov-nascita');
-    selProv.value = p.provincia_nascita;
-    caricaComuni(p.provincia_nascita, document.getElementById('p-comune-nascita')).then(() => {
-      if (p.codice_comune_nascita) document.getElementById('p-comune-nascita').value = p.codice_comune_nascita;
-    });
+    const sigla   = p.provincia_nascita;
+    const provObj = provinceCache.find(pr => pr.sigla === sigla);
+    document.getElementById('p-prov-nascita-text').value = provObj
+      ? `${sigla} — ${provObj.nome}` : sigla;
+    document.getElementById('p-prov-nascita').value = sigla;
+    await caricaComuniCombobox(sigla);
+    if (p.codice_comune_nascita) {
+      const c = comuniCache.find(c => c.codice_istat === p.codice_comune_nascita);
+      if (c) {
+        document.getElementById('p-comune-nascita-text').value = c.nome;
+        document.getElementById('p-comune-nascita').value = c.codice_istat;
+      }
+    }
+    ricalcolaCFPub();
   }
 }
 
 document.getElementById('btn-step3-back').addEventListener('click', () => goStep(2));
 document.getElementById('btn-step3-next').addEventListener('click', () => {
-  const cognome  = document.getElementById('p-cognome').value.trim();
   const nome     = document.getElementById('p-nome').value.trim();
+  const cognome  = document.getElementById('p-cognome').value.trim();
   const telefono = document.getElementById('p-telefono').value.trim();
-  if (!cognome || !nome) {
+  const dn       = document.getElementById('p-data-nascita').value;
+  if (!nome || !cognome) {
     document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Nome e cognome obbligatori</div>';
+    return;
+  }
+  if (dn && !ddmmyyyyToISO(dn)) {
+    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Data di nascita non valida (formato gg/mm/aaaa)</div>';
     return;
   }
   if (!telefono) {
@@ -412,12 +570,12 @@ document.getElementById('btn-step3-next').addEventListener('click', () => {
 
 /* ── Step 4: Conferma ────────────────────────────────────────────────────── */
 function generaRiepilogo() {
-  const dn = document.getElementById('p-data-nascita').value;
+  const dn_raw = document.getElementById('p-data-nascita').value;
   const righe = [
     ['Tipo visita',     tipoSelezionato?.nome],
     ['Data e ora',      slotSelezionato ? formatDataItaliano(slotSelezionato.data) + ' alle ' + slotSelezionato.ora : ''],
-    ['Paziente',        document.getElementById('p-cognome').value + ' ' + document.getElementById('p-nome').value],
-    ['Data di nascita', dn ? fmtData(dn) : ''],
+    ['Paziente',        document.getElementById('p-nome').value + ' ' + document.getElementById('p-cognome').value],
+    ['Data di nascita', dn_raw || ''],
     ['Codice Fiscale',  document.getElementById('p-cf').value],
     ['Telefono',        document.getElementById('p-telefono').value],
     ['Email',           document.getElementById('p-email').value],
@@ -438,16 +596,18 @@ document.getElementById('btn-invia').addEventListener('click', async () => {
   const btn = document.getElementById('btn-invia');
   btn.disabled = true; btn.textContent = 'Invio in corso...';
   const dataOra = `${slotSelezionato.data}T${slotSelezionato.ora}:00`;
-  const selCom  = document.getElementById('p-comune-nascita');
+  const dn_raw  = document.getElementById('p-data-nascita').value;
   const body = {
     tipo_visita_id:        tipoSelezionato.id,
     data_ora:              dataOra,
     nome:                  document.getElementById('p-nome').value.trim(),
     cognome:               document.getElementById('p-cognome').value.trim(),
-    data_nascita:          document.getElementById('p-data-nascita').value || null,
+    data_nascita:          ddmmyyyyToISO(dn_raw) || null,
     sesso:                 document.getElementById('p-sesso').value || null,
-    codice_comune_nascita: selCom?.value || null,
-    luogo_nascita:         selCom?.selectedOptions[0]?.textContent || document.getElementById('p-luogo-libero').value || null,
+    codice_comune_nascita: document.getElementById('p-comune-nascita').value || null,
+    luogo_nascita:         document.getElementById('p-comune-nascita-text').value
+                           || document.getElementById('p-luogo-libero').value || null,
+    provincia_nascita:     document.getElementById('p-prov-nascita').value || null,
     codice_fiscale:        document.getElementById('p-cf').value || null,
     citta_residenza:       document.getElementById('p-citta').value || null,
     provincia_residenza:   document.getElementById('p-prov-res').value || null,

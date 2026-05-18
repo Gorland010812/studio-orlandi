@@ -19,6 +19,10 @@
     .disp-orari { display:flex; gap:.5rem; align-items:center; font-size:.85rem; flex-wrap:wrap; }
     .disp-orari input { width:80px; padding:.3rem .5rem; border:1.5px solid var(--grigio-bordo);
                         border-radius:var(--radius-sm); }
+    .disp-orari input:disabled { background:#f0f0f0; color:#aaa; cursor:not-allowed; }
+    .d-modo { padding:.25rem .4rem; border:1.5px solid var(--grigio-bordo); border-radius:var(--radius-sm);
+              font-size:.82rem; background:#fff; cursor:pointer; }
+    .d-modo:disabled { background:#f0f0f0; color:#aaa; cursor:not-allowed; }
     .tv-item { display:flex; align-items:center; gap:.75rem; padding:.65rem .85rem;
                border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm); margin-bottom:.5rem; background:#fff; }
     .tv-dot-big { width:16px; height:16px; border-radius:50%; flex-shrink:0; }
@@ -270,17 +274,58 @@ async function caricaDisponibilita() {
     const row = document.createElement('div');
     row.className = 'disp-row';
     row.dataset.gg = d.giorno_settimana;
+
+    // Fix 13: rileva modalità corrente
+    const soloMattina = d.attivo &&
+      (d.ora_inizio_pomeriggio === '00:00' || !d.ora_inizio_pomeriggio) &&
+      (d.ora_fine_pomeriggio   === '00:00' || !d.ora_fine_pomeriggio);
+    const soloPomeriggio = d.attivo &&
+      (d.ora_inizio_mattina === '00:00' || !d.ora_inizio_mattina) &&
+      (d.ora_fine_mattina   === '00:00' || !d.ora_fine_mattina);
+    const modo = soloMattina ? 'mattina' : soloPomeriggio ? 'pomeriggio' : 'entrambi';
+
+    const disAll = !d.attivo;
+    const disM   = disAll || modo === 'pomeriggio';
+    const disP   = disAll || modo === 'mattina';
+
     row.innerHTML = `
       <label style="display:flex;align-items:center;gap:.4rem;width:120px;cursor:pointer">
         <input type="checkbox" class="d-attivo" ${d.attivo?'checked':''}>
         <span class="disp-gg">${d.giorno_nome}</span>
       </label>
+      <select class="d-modo" ${disAll?'disabled':''}>
+        <option value="entrambi" ${modo==='entrambi'?'selected':''}>Mattina + Pomeriggio</option>
+        <option value="mattina"  ${modo==='mattina'?'selected':''}>Solo mattina</option>
+        <option value="pomeriggio" ${modo==='pomeriggio'?'selected':''}>Solo pomeriggio</option>
+      </select>
       <div class="disp-orari">
-        M: <input type="time" class="d-im" value="${d.ora_inizio_mattina}">
-        – <input type="time" class="d-fm" value="${d.ora_fine_mattina}">
-        &nbsp; P: <input type="time" class="d-ip" value="${d.ora_inizio_pomeriggio}">
-        – <input type="time" class="d-fp" value="${d.ora_fine_pomeriggio}">
+        M: <input type="time" class="d-im" value="${d.ora_inizio_mattina||'08:30'}" ${disM?'disabled':''}>
+        –  <input type="time" class="d-fm" value="${d.ora_fine_mattina||'13:00'}" ${disM?'disabled':''}>
+        &nbsp;P: <input type="time" class="d-ip" value="${d.ora_inizio_pomeriggio||'15:30'}" ${disP?'disabled':''}>
+        –  <input type="time" class="d-fp" value="${d.ora_fine_pomeriggio||'19:00'}" ${disP?'disabled':''}>
       </div>`;
+
+    // Fix 12 & 13: aggiorna stato campi al cambio checkbox/modo
+    const checkbox = row.querySelector('.d-attivo');
+    const modoSel  = row.querySelector('.d-modo');
+    const imInputs = [row.querySelector('.d-im'), row.querySelector('.d-fm')];
+    const ipInputs = [row.querySelector('.d-ip'), row.querySelector('.d-fp')];
+
+    function aggiornaStato() {
+      const attivo = checkbox.checked;
+      modoSel.disabled = !attivo;
+      if (!attivo) {
+        [...imInputs, ...ipInputs].forEach(i => i.disabled = true);
+        return;
+      }
+      const m = modoSel.value;
+      imInputs.forEach(i => i.disabled = m === 'pomeriggio');
+      ipInputs.forEach(i => i.disabled = m === 'mattina');
+    }
+
+    checkbox.addEventListener('change', aggiornaStato);
+    modoSel.addEventListener('change', aggiornaStato);
+
     list.appendChild(row);
   });
 }
@@ -289,13 +334,24 @@ document.getElementById('btn-salva-disp').addEventListener('click', async () => 
   const rows = document.querySelectorAll('#disp-list .disp-row');
   const disp = [];
   rows.forEach(row => {
+    // Fix 13: applica modo prima di leggere i valori
+    const modo = row.querySelector('.d-modo')?.value || 'entrambi';
+    const im = row.querySelector('.d-im');
+    const fm = row.querySelector('.d-fm');
+    const ip = row.querySelector('.d-ip');
+    const fp = row.querySelector('.d-fp');
+    if (modo === 'mattina') {
+      ip.value = '00:00'; fp.value = '00:00';
+    } else if (modo === 'pomeriggio') {
+      im.value = '00:00'; fm.value = '00:00';
+    }
     disp.push({
-      giorno_settimana:    parseInt(row.dataset.gg),
-      ora_inizio_mattina:  row.querySelector('.d-im').value,
-      ora_fine_mattina:    row.querySelector('.d-fm').value,
-      ora_inizio_pomeriggio: row.querySelector('.d-ip').value,
-      ora_fine_pomeriggio: row.querySelector('.d-fp').value,
-      attivo:              row.querySelector('.d-attivo').checked,
+      giorno_settimana:      parseInt(row.dataset.gg),
+      ora_inizio_mattina:    im.value || '00:00',
+      ora_fine_mattina:      fm.value || '00:00',
+      ora_inizio_pomeriggio: ip.value || '00:00',
+      ora_fine_pomeriggio:   fp.value || '00:00',
+      attivo:                row.querySelector('.d-attivo').checked,
     });
   });
   try {

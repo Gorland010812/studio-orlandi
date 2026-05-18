@@ -105,6 +105,33 @@ def _slot_occupato(slot_inizio: datetime, durata: int, appuntamenti: list) -> bo
     return False
 
 
+def calcola_slot_giorno(db: Session, data: date, durata_minuti: int) -> dict:
+    """Slot liberi per un giorno specifico (endpoint medico, senza limiti di data)."""
+    dow = data.weekday()
+    disp = db.query(Disponibilita).filter(
+        Disponibilita.giorno_settimana == dow,
+        Disponibilita.attivo == True,
+    ).first()
+    if not disp:
+        return {"slot": [], "ha_disponibilita": False}
+    slot_teorici = _genera_slot(data, disp, durata_minuti)
+    app_giorno = (
+        db.query(Appuntamento)
+        .filter(
+            Appuntamento.stato.notin_(["annullato"]),
+            Appuntamento.data_ora >= datetime.combine(data, time(0, 0)),
+            Appuntamento.data_ora < datetime.combine(data, time(23, 59)),
+        )
+        .all()
+    )
+    slot_liberi = [
+        s.strftime("%H:%M")
+        for s in slot_teorici
+        if not _slot_occupato(s, durata_minuti, app_giorno)
+    ]
+    return {"slot": slot_liberi, "ha_disponibilita": True}
+
+
 def calcola_slot_liberi(
     db: Session,
     durata_minuti: int,
@@ -202,6 +229,7 @@ def appuntamenti_mese(
 def slot_liberi(
     tipo_visita_id: Optional[int] = Query(None),
     durata_minuti: Optional[int] = Query(None),
+    data: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
@@ -211,6 +239,8 @@ def slot_liberi(
         durata = tv.durata_minuti if tv else 30
     if not durata:
         durata = 30
+    if data:
+        return calcola_slot_giorno(db, data, durata)
     return calcola_slot_liberi(db, durata)
 
 
