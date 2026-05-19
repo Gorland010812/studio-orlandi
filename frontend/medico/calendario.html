@@ -120,6 +120,12 @@
           <div class="search-paziente-results hidden" id="search-results"></div>
         </div>
         <input type="hidden" id="paziente-id-hidden">
+        <input type="hidden" id="paz-tel-hidden">
+        <input type="hidden" id="paz-email-hidden">
+        <div class="hidden" id="paz-info-row" style="font-size:.82rem;color:#666;margin-top:.3rem;display:flex;gap:1.2rem;flex-wrap:wrap">
+          <span id="paz-tel-display"></span>
+          <span id="paz-email-display"></span>
+        </div>
       </div>
       <div class="form-group">
         <label>Tipo visita</label>
@@ -297,7 +303,7 @@ async function apriModifica(id) {
   document.getElementById('sede-sel').value  = a.sede_id || '';
   document.getElementById('app-stato').value = a.stato;
   document.getElementById('app-note').value  = a.note || '';
-  if (a.paziente_id) setPazienteSelezionato(a.paziente_id, a.nome_display);
+  if (a.paziente_id) setPazienteSelezionato(a.paziente_id, a.nome_display, { telefono: a.telefono_paziente, email: a.email_paziente });
   // Carica slot per la data, poi seleziona l'ora corrente
   await aggiornaSlotOra(oraStr);
   openModal('modal-nuovo');
@@ -310,6 +316,9 @@ function resetModal() {
   document.getElementById('paziente-id-hidden').value = '';
   document.getElementById('btn-clear-paz').classList.add('hidden');
   document.getElementById('search-results').classList.add('hidden');
+  document.getElementById('paz-tel-hidden').value = '';
+  document.getElementById('paz-email-hidden').value = '';
+  document.getElementById('paz-info-row').classList.add('hidden');
   document.getElementById('app-data').value = '';
   document.getElementById('app-ora-sel').innerHTML = '<option value="">— Prima seleziona data —</option>';
   document.getElementById('app-ora').value = '';
@@ -320,12 +329,19 @@ function resetModal() {
   document.getElementById('app-note').value = '';
 }
 
-function setPazienteSelezionato(id, label) {
+function setPazienteSelezionato(id, label, paz = null) {
   document.getElementById('paziente-id-hidden').value = id;
   document.getElementById('search-paziente').value = label;
   document.getElementById('search-paziente').style.fontWeight = '600';
   document.getElementById('btn-clear-paz').classList.remove('hidden');
   document.getElementById('search-results').classList.add('hidden');
+  const tel = paz?.telefono || '';
+  const email = paz?.email || '';
+  document.getElementById('paz-tel-hidden').value = tel;
+  document.getElementById('paz-email-hidden').value = email;
+  document.getElementById('paz-tel-display').textContent = tel ? '☎ ' + tel : '';
+  document.getElementById('paz-email-display').textContent = email ? '✉ ' + email : '';
+  document.getElementById('paz-info-row').classList.toggle('hidden', !tel && !email);
 }
 
 /* ── Fix 16: slot orario nel modal medico ────────────────────────────────── */
@@ -400,10 +416,13 @@ async function mostraPazienti(q) {
       risultati.forEach(p => {
         const d = document.createElement('div');
         d.className = 'search-item';
-        d.textContent = `${p.cognome} ${p.nome}${p.data_nascita ? ' · ' + fmtData(p.data_nascita) : ''}`;
+        let info = `${p.cognome} ${p.nome}`;
+        if (p.data_nascita) info += ' · ' + fmtData(p.data_nascita);
+        if (p.provincia_nascita) info += ' (' + p.provincia_nascita + ')';
+        d.textContent = info;
         d.addEventListener('mousedown', e => {
           e.preventDefault();
-          setPazienteSelezionato(p.id, `${p.cognome} ${p.nome}`);
+          setPazienteSelezionato(p.id, `${p.cognome} ${p.nome}`, p);
         });
         box.appendChild(d);
       });
@@ -456,6 +475,8 @@ document.getElementById('btn-salva-app').addEventListener('click', async () => {
     paziente_id: parseInt(document.getElementById('paziente-id-hidden').value) || null,
     stato: document.getElementById('app-stato').value,
     note: document.getElementById('app-note').value || null,
+    telefono_paziente: document.getElementById('paz-tel-hidden').value || null,
+    email_paziente: document.getElementById('paz-email-hidden').value || null,
   };
   try {
     if (appCorrenteId) {
