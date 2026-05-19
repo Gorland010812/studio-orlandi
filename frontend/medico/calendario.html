@@ -303,7 +303,11 @@ async function apriModifica(id) {
   document.getElementById('sede-sel').value  = a.sede_id || '';
   document.getElementById('app-stato').value = a.stato;
   document.getElementById('app-note').value  = a.note || '';
-  if (a.paziente_id) setPazienteSelezionato(a.paziente_id, a.nome_display, { telefono: a.telefono_paziente, email: a.email_paziente });
+  if (a.paziente_id) {
+    setPazienteSelezionato(a.paziente_id, a.nome_display, { telefono: a.telefono_paziente, email: a.email_paziente });
+  } else if (a.nome_display && a.nome_display !== '—') {
+    setPazienteSelezionato('', a.nome_display, { telefono: a.telefono_paziente, email: a.email_paziente });
+  }
   // Carica slot per la data, poi seleziona l'ora corrente
   await aggiornaSlotOra(oraStr);
   openModal('modal-nuovo');

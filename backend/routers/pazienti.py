@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_, and_, func
 from pydantic import BaseModel
 
 from database import get_db
@@ -148,18 +148,18 @@ def cerca_pazienti(
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    """Ricerca per nome/cognome — usata per controllo duplicati."""
-    termine = f"%{q}%"
+    """Ricerca per nome/cognome — ogni parola deve comparire in nome o cognome."""
+    parole = q.strip().split()
+    condizioni = [
+        or_(
+            Paziente.cognome.ilike(f"%{p}%"),
+            Paziente.nome.ilike(f"%{p}%"),
+        )
+        for p in parole
+    ]
     risultati = (
         db.query(Paziente)
-        .filter(
-            or_(
-                func.lower(Paziente.cognome).like(func.lower(termine)),
-                func.lower(Paziente.nome).like(func.lower(termine)),
-                (func.lower(Paziente.cognome) + " " + func.lower(Paziente.nome)).like(func.lower(termine)),
-                (func.lower(Paziente.nome) + " " + func.lower(Paziente.cognome)).like(func.lower(termine)),
-            )
-        )
+        .filter(and_(*condizioni))
         .order_by(Paziente.cognome, Paziente.nome)
         .limit(20)
         .all()
