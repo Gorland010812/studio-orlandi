@@ -389,17 +389,15 @@ document.getElementById('app-ora-sel').addEventListener('change', function() {
 let searchTimer2;
 
 async function mostraPazienti(q) {
-  const url = q.length >= 1
-    ? `/api/pazienti?q=${encodeURIComponent(q)}&limit=15`
-    : '/api/pazienti?limit=25';
+  const box = document.getElementById('search-results');
+  if (q.length < 2) { box.classList.add('hidden'); return; }
   try {
-    const res = await api(url);
-    const box = document.getElementById('search-results');
+    const risultati = await api(`/api/pazienti/cerca?q=${encodeURIComponent(q)}`);
     box.innerHTML = '';
-    if (!res || !res.pazienti.length) {
+    if (!risultati || !risultati.length) {
       box.innerHTML = '<div class="search-item" style="color:#bbb;cursor:default">Nessun paziente trovato</div>';
     } else {
-      res.pazienti.forEach(p => {
+      risultati.forEach(p => {
         const d = document.createElement('div');
         d.className = 'search-item';
         d.textContent = `${p.cognome} ${p.nome}${p.data_nascita ? ' · ' + fmtData(p.data_nascita) : ''}`;
@@ -418,7 +416,7 @@ const elSearchPaz = document.getElementById('search-paziente');
 
 elSearchPaz.addEventListener('focus', () => {
   if (document.getElementById('paziente-id-hidden').value) return;
-  mostraPazienti(elSearchPaz.value.trim());
+  if (elSearchPaz.value.trim().length >= 2) mostraPazienti(elSearchPaz.value.trim());
 });
 
 elSearchPaz.addEventListener('input', e => {
