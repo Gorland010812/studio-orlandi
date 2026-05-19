@@ -418,7 +418,8 @@ async function mostraPazienti(q) {
         d.className = 'search-item';
         let info = `${p.cognome} ${p.nome}`;
         if (p.data_nascita) info += ' · ' + fmtData(p.data_nascita);
-        if (p.provincia_nascita) info += ' (' + p.provincia_nascita + ')';
+        const luogo = [p.luogo_nascita, p.provincia_nascita].filter(Boolean).join(' ');
+        if (luogo) info += ' (' + luogo + ')';
         d.textContent = info;
         d.addEventListener('mousedown', e => {
           e.preventDefault();

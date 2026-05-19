@@ -167,7 +167,8 @@ def cerca_pazienti(
     return [{"id": p.id, "cognome": p.cognome, "nome": p.nome,
              "data_nascita": p.data_nascita.isoformat() if p.data_nascita else None,
              "codice_fiscale": p.codice_fiscale, "telefono": p.telefono,
-             "email": p.email, "provincia_nascita": p.provincia_nascita} for p in risultati]
+             "email": p.email, "provincia_nascita": p.provincia_nascita,
+             "luogo_nascita": p.luogo_nascita} for p in risultati]
 
 
 @router.get("")
