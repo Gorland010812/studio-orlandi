@@ -116,36 +116,25 @@ def slot_liberi_pubblici(
 
 @router.get("/cerca-paziente")
 def cerca_paziente_pubblico(
-    nome: Optional[str] = Query(None),
-    cognome: Optional[str] = Query(None),
+    nome: str = Query(..., min_length=2),
+    cognome: str = Query(..., min_length=2),
     db: Session = Depends(get_db),
 ):
     """
-    Cerca paziente per autocompletamento nel portale (pubblico, no auth).
-    Almeno uno tra nome e cognome deve avere >= 2 caratteri.
+    Verifica match esatto nome+cognome (pubblico, no auth, GDPR-safe).
+    Non restituisce liste — risponde solo se il paziente esiste.
     """
-    nome = (nome or '').strip()
-    cognome = (cognome or '').strip()
-    if len(nome) < 2 and len(cognome) < 2:
-        return []
-    condizioni = []
-    if len(nome) >= 2:
-        condizioni.append(or_(
-            Paziente.nome.ilike(f"%{nome}%"),
-            Paziente.cognome.ilike(f"%{nome}%"),
-        ))
-    if len(cognome) >= 2:
-        condizioni.append(or_(
-            Paziente.nome.ilike(f"%{cognome}%"),
-            Paziente.cognome.ilike(f"%{cognome}%"),
-        ))
-    risultati = (
+    p = (
         db.query(Paziente)
-        .filter(and_(*condizioni))
-        .order_by(Paziente.cognome, Paziente.nome)
-        .limit(5)
-        .all()
+        .filter(
+            func.lower(Paziente.nome)    == nome.strip().lower(),
+            func.lower(Paziente.cognome) == cognome.strip().lower(),
+        )
+        .first()
     )
+    if not p:
+        return []
+    risultati = [p]
     return [
         {
             "id": p.id,

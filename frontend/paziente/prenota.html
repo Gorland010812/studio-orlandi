@@ -485,38 +485,22 @@ document.getElementById('p-data-nascita').addEventListener('input', function() {
   document.getElementById(id).addEventListener('change', ricalcolaCFPub);
 });
 
-/* Autocompletamento paziente esistente ───────────────────────────────────── */
-let autoTimer;
-function triggerAutocompletamento() {
-  clearTimeout(autoTimer);
-  autoTimer = setTimeout(async () => {
-    const nome    = document.getElementById('p-nome').value.trim();
-    const cognome = document.getElementById('p-cognome').value.trim();
-    if (nome.length < 2 && cognome.length < 2) return;
-    try {
-      const res = await api(`/api/prenota/cerca-paziente?nome=${encodeURIComponent(nome)}&cognome=${encodeURIComponent(cognome)}`);
-      const box = document.getElementById('autocomplete-res');
-      const msg = document.getElementById('autocomplete-msg');
-      if (!res.length) { box.classList.add('hidden'); return; }
-      box.innerHTML = '';
-      res.forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'autocomplete-item';
-        item.textContent = `${p.nome} ${p.cognome}${p.data_nascita ? ' · '+isoToDDMMYYYY(p.data_nascita) : ''}`;
-        item.addEventListener('click', () => {
-          precompilaPaziente(p);
-          box.classList.add('hidden');
-          msg.textContent = '✓ Dati pre-compilati dall\'archivio — verifica e completa se necessario';
-          msg.classList.remove('hidden');
-        });
-        box.appendChild(item);
-      });
-      box.classList.remove('hidden');
-    } catch(e) {}
-  }, 600);
+/* Verifica paziente esistente (GDPR: no lista, solo match esatto) ─────────── */
+async function verificaPazienteEsistente() {
+  const nome    = document.getElementById('p-nome').value.trim();
+  const cognome = document.getElementById('p-cognome').value.trim();
+  if (nome.length < 2 || cognome.length < 2) return;
+  try {
+    const res = await api(`/api/prenota/cerca-paziente?nome=${encodeURIComponent(nome)}&cognome=${encodeURIComponent(cognome)}`);
+    if (!res.length) return;
+    precompilaPaziente(res[0]);
+    const msg = document.getElementById('autocomplete-msg');
+    msg.textContent = '✓ Dati pre-compilati dall\'archivio — verifica e completa se necessario';
+    msg.classList.remove('hidden');
+  } catch(e) {}
 }
-document.getElementById('p-nome').addEventListener('input', triggerAutocompletamento);
-document.getElementById('p-cognome').addEventListener('input', triggerAutocompletamento);
+document.getElementById('p-nome').addEventListener('blur', verificaPazienteEsistente);
+document.getElementById('p-cognome').addEventListener('blur', verificaPazienteEsistente);
 
 async function precompilaPaziente(p) {
   // Fix 15: converti ISO → gg/mm/aaaa
