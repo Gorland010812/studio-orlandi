@@ -433,7 +433,11 @@ async function mostraPazienti(q) {
       });
     }
     box.classList.remove('hidden');
-  } catch(e) {}
+  } catch(e) {
+    console.error('Ricerca paziente:', e);
+    box.innerHTML = `<div class="search-item" style="color:#c00;cursor:default">Errore ricerca: ${e.message}</div>`;
+    box.classList.remove('hidden');
+  }
 }
 
 const elSearchPaz = document.getElementById('search-paziente');
