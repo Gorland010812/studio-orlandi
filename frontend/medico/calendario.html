@@ -496,34 +496,26 @@ function renderLista() {
   list.innerHTML = '';
   const ultimoGiorno = new Date(anno, mese, 0).getDate();
   const oggi = new Date();
+  const isMeseCorrente = oggi.getFullYear() === anno && oggi.getMonth() + 1 === mese;
+  // Mese corrente: parti da oggi; mesi passati/futuri: parti dal giorno 1
+  const giornoDa = isMeseCorrente ? oggi.getDate() : 1;
 
-  for (let g = 1; g <= ultimoGiorno; g++) {
+  for (let g = giornoDa; g <= ultimoGiorno; g++) {
     const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
     const d = new Date(anno, mese-1, g);
-    const isOggi = oggi.getFullYear()===anno && oggi.getMonth()===mese-1 && oggi.getDate()===g;
+    const isOggi = isMeseCorrente && g === oggi.getDate();
     const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
     const hasDisp = dispSet.size === 0 || dispSet.has(dow);
+
+    // Nascondi giorni senza ambulatorio
+    if (!hasDisp) continue;
+
     const appGiorno = appuntamenti.filter(a => a.data_ora.startsWith(dataStr));
-
     const dayEl = document.createElement('div');
-
-    if (!hasDisp) {
-      // Fix 17: giorno senza ambulatorio in lista
-      dayEl.className = 'cal-list-day no-disp' + (isOggi ? ' oggi' : '');
-      const nomeG = nomeGiorno(d.getDay() === 0 ? 6 : d.getDay() - 1);
-      const hdr = document.createElement('div');
-      hdr.className = 'cal-list-day-hdr';
-      hdr.innerHTML = `<span class="cal-list-day-nome">${nomeG} ${g} ${nomeMese(mese-1).toLowerCase()}</span>
-        <span class="cal-list-day-n" style="color:#aaa">chiuso</span>`;
-      dayEl.appendChild(hdr);
-      list.appendChild(dayEl);
-      continue;
-    }
-
     dayEl.className = 'cal-list-day' + (isOggi ? ' oggi' : '');
     if (isOggi) dayEl.style.borderColor = 'var(--giallo)';
 
-    const nomeG = nomeGiorno(d.getDay() === 0 ? 6 : d.getDay() - 1);
+    const nomeG = nomeGiorno(dow);
     const hdr = document.createElement('div');
     hdr.className = 'cal-list-day-hdr';
     hdr.innerHTML = `<span class="cal-list-day-nome">${nomeG} ${g} ${nomeMese(mese-1).toLowerCase()}</span>
@@ -551,13 +543,6 @@ function renderLista() {
     }
     list.appendChild(dayEl);
   }
-
-  // Scorri automaticamente a oggi (window.scrollTo è più affidabile di scrollIntoView su iOS)
-  const oggiEl = list.querySelector('.cal-list-day.oggi');
-  if (oggiEl) setTimeout(() => {
-    const top = oggiEl.getBoundingClientRect().top + (window.pageYOffset || window.scrollY) - 72;
-    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-  }, 300);
 }
 
 /* ── Nav mese ─────────────────────────────────────────────────────────────── */
