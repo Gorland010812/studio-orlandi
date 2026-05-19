@@ -76,6 +76,11 @@ def _parse_time(t: str) -> time:
     return time(h, m)
 
 
+def _fascia_valida(inizio: str, fine: str) -> bool:
+    """Fascia configurata: non vuota e diversa da 00:00."""
+    return bool(inizio and fine and inizio != '00:00' and fine != '00:00')
+
+
 def _genera_slot(data: date, disp: Disponibilita, durata: int) -> list[datetime]:
     """Genera tutti gli slot teorici per un giorno di disponibilità."""
     slot = []
@@ -83,7 +88,7 @@ def _genera_slot(data: date, disp: Disponibilita, durata: int) -> list[datetime]
         (disp.ora_inizio_mattina, disp.ora_fine_mattina),
         (disp.ora_inizio_pomeriggio, disp.ora_fine_pomeriggio),
     ]:
-        if not inizio_str or not fine_str:
+        if not _fascia_valida(inizio_str, fine_str):
             continue
         inizio = datetime.combine(data, _parse_time(inizio_str))
         fine   = datetime.combine(data, _parse_time(fine_str))
@@ -113,6 +118,10 @@ def calcola_slot_giorno(db: Session, data: date, durata_minuti: int) -> dict:
         Disponibilita.attivo == True,
     ).first()
     if not disp:
+        return {"slot": [], "ha_disponibilita": False}
+    # Giorno attivo ma senza fasce orarie configurate (entrambe 00:00 o vuote)
+    if not _fascia_valida(disp.ora_inizio_mattina, disp.ora_fine_mattina) and \
+       not _fascia_valida(disp.ora_inizio_pomeriggio, disp.ora_fine_pomeriggio):
         return {"slot": [], "ha_disponibilita": False}
     slot_teorici = _genera_slot(data, disp, durata_minuti)
     app_giorno = (
