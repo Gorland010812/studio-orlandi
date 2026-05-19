@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from pydantic import BaseModel
 
 from database import get_db
@@ -116,20 +116,33 @@ def slot_liberi_pubblici(
 
 @router.get("/cerca-paziente")
 def cerca_paziente_pubblico(
-    nome: str = Query(..., min_length=2),
-    cognome: str = Query(..., min_length=2),
+    nome: Optional[str] = Query(None),
+    cognome: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     """
-    Cerca paziente per autocompletamento nel portale.
-    Restituisce solo i dati necessari per pre-popolare il form.
+    Cerca paziente per autocompletamento nel portale (pubblico, no auth).
+    Almeno uno tra nome e cognome deve avere >= 2 caratteri.
     """
+    nome = (nome or '').strip()
+    cognome = (cognome or '').strip()
+    if len(nome) < 2 and len(cognome) < 2:
+        return []
+    condizioni = []
+    if len(nome) >= 2:
+        condizioni.append(or_(
+            Paziente.nome.ilike(f"%{nome}%"),
+            Paziente.cognome.ilike(f"%{nome}%"),
+        ))
+    if len(cognome) >= 2:
+        condizioni.append(or_(
+            Paziente.nome.ilike(f"%{cognome}%"),
+            Paziente.cognome.ilike(f"%{cognome}%"),
+        ))
     risultati = (
         db.query(Paziente)
-        .filter(
-            func.lower(Paziente.nome) == func.lower(nome.strip()),
-            func.lower(Paziente.cognome) == func.lower(cognome.strip()),
-        )
+        .filter(and_(*condizioni))
+        .order_by(Paziente.cognome, Paziente.nome)
         .limit(5)
         .all()
     )

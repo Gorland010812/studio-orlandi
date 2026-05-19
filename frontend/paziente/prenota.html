@@ -492,7 +492,7 @@ function triggerAutocompletamento() {
   autoTimer = setTimeout(async () => {
     const nome    = document.getElementById('p-nome').value.trim();
     const cognome = document.getElementById('p-cognome').value.trim();
-    if (nome.length < 2 || cognome.length < 2) return;
+    if (nome.length < 2 && cognome.length < 2) return;
     try {
       const res = await api(`/api/prenota/cerca-paziente?nome=${encodeURIComponent(nome)}&cognome=${encodeURIComponent(cognome)}`);
       const box = document.getElementById('autocomplete-res');
