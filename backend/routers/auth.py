@@ -103,7 +103,7 @@ def setup_iniziale(body: SetupRequest, db: Session = Depends(get_db)):
     if len(body.password) < 6:
         raise HTTPException(status_code=422, detail="Password deve avere almeno 6 caratteri")
 
-    impostazioni.username = body.username.strip()
+    impostazioni.username = body.username.strip().lower()
     impostazioni.password_hash = pwd_context.hash(body.password)
     db.commit()
 
@@ -117,7 +117,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     if impostazioni is None:
         raise HTTPException(status_code=500, detail="Sistema non inizializzato")
 
-    if body.username != impostazioni.username:
+    if body.username.strip().lower() != impostazioni.username.lower():
         raise HTTPException(status_code=401, detail="Credenziali non valide")
 
     if not pwd_context.verify(body.password, impostazioni.password_hash):

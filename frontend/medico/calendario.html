@@ -509,7 +509,7 @@ function renderLista() {
 
     if (!hasDisp) {
       // Fix 17: giorno senza ambulatorio in lista
-      dayEl.className = 'cal-list-day no-disp';
+      dayEl.className = 'cal-list-day no-disp' + (isOggi ? ' oggi' : '');
       const nomeG = nomeGiorno(d.getDay() === 0 ? 6 : d.getDay() - 1);
       const hdr = document.createElement('div');
       hdr.className = 'cal-list-day-hdr';
@@ -552,9 +552,12 @@ function renderLista() {
     list.appendChild(dayEl);
   }
 
-  // Fix 8: scorri automaticamente a oggi
+  // Scorri automaticamente a oggi (window.scrollTo è più affidabile di scrollIntoView su iOS)
   const oggiEl = list.querySelector('.cal-list-day.oggi');
-  if (oggiEl) setTimeout(() => oggiEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  if (oggiEl) setTimeout(() => {
+    const top = oggiEl.getBoundingClientRect().top + (window.pageYOffset || window.scrollY) - 72;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }, 300);
 }
 
 /* ── Nav mese ─────────────────────────────────────────────────────────────── */
