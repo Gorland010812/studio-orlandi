@@ -49,6 +49,21 @@
     .cal-list-day.no-disp .cal-list-day-hdr { cursor:default; }
     /* Ora slot */
     .ora-custom-wrap { margin-top:.35rem; }
+    /* Popup slot rapido */
+    .slot-popup { position:fixed; background:#fff; border:1.5px solid var(--grigio-bordo);
+                  border-radius:var(--radius); box-shadow:var(--ombra-card);
+                  padding:.5rem; z-index:500; min-width:148px; }
+    .slot-popup-btn { display:block; width:100%; text-align:left; padding:.38rem .7rem;
+                      border:none; background:none; border-radius:var(--radius-sm);
+                      cursor:pointer; font-size:.88rem; font-family:inherit;
+                      color:var(--verde-scuro); font-weight:500; }
+    .slot-popup-btn:hover { background:var(--verde-chiaro); }
+    .slot-popup-sep { border:none; border-top:1px solid var(--grigio-bordo); margin:.35rem 0; }
+    .slot-popup-altro { display:block; width:100%; text-align:left; padding:.32rem .7rem;
+                        border:none; background:none; border-radius:var(--radius-sm);
+                        cursor:pointer; font-size:.8rem; font-family:inherit; color:#999; }
+    .slot-popup-altro:hover { background:#f5f5f5; }
+    .slot-popup-msg { font-size:.8rem; color:#aaa; padding:.35rem .7rem; }
     @media (max-width: 768px) {
       .cal-view-btn { display:inline-flex; }
       .cal-header-bar { flex-direction:column; align-items:flex-start; }
@@ -104,6 +119,9 @@
     <div class="cal-list" id="cal-list"></div>
   </div>
 </div>
+
+<!-- Popup slot rapido (posizionato via JS) -->
+<div class="slot-popup hidden" id="slot-popup"></div>
 
 <!-- Modal nuovo appuntamento -->
 <div class="modal-overlay hidden" id="modal-nuovo">
@@ -256,7 +274,7 @@ function renderCalendario() {
       if (e.target.classList.contains('cal-event')) {
         apriModifica(parseInt(e.target.dataset.id));
       } else {
-        apriNuovo(dataStr);
+        apriSlotPopup(dataStr, cell, e);
       }
     });
     grid.appendChild(cell);
@@ -279,14 +297,14 @@ function aggiornaStats() {
 }
 
 /* ── Modal ───────────────────────────────────────────────────────────────── */
-function apriNuovo(dataStr = '') {
+function apriNuovo(dataStr = '', oraStr = '') {
   appCorrenteId = null;
   document.getElementById('modal-title').textContent = 'Nuovo appuntamento';
   document.getElementById('btn-elimina-app').classList.add('hidden');
   resetModal();
   if (dataStr) {
     document.getElementById('app-data').value = dataStr;
-    aggiornaSlotOra();
+    aggiornaSlotOra(oraStr, false);
   }
   openModal('modal-nuovo');
 }
@@ -311,7 +329,7 @@ async function apriModifica(id) {
     setPazienteSelezionato('', a.nome_display, { telefono: a.telefono_paziente, email: a.email_paziente });
   }
   // Carica slot per la data, poi seleziona l'ora corrente
-  await aggiornaSlotOra(oraStr);
+  await aggiornaSlotOra(oraStr, true);
   openModal('modal-nuovo');
 }
 
@@ -350,8 +368,10 @@ function setPazienteSelezionato(id, label, paz = null) {
   document.getElementById('paz-info-row').classList.toggle('hidden', !tel && !email);
 }
 
-/* ── Fix 16: slot orario nel modal medico ────────────────────────────────── */
-async function aggiornaSlotOra(oraPreselezionata = '') {
+/* ── Slot orario nel modal ────────────────────────────────────────────────── */
+// labelAttuale=true → mostra "(attuale)" per la modifica di un appuntamento esistente
+// labelAttuale=false → pre-seleziona l'ora senza etichetta aggiuntiva (nuovo appuntamento)
+async function aggiornaSlotOra(oraPreselezionata = '', labelAttuale = true) {
   const data  = document.getElementById('app-data').value;
   const tvId  = document.getElementById('tipo-visita-sel').value;
   const sel   = document.getElementById('app-ora-sel');
@@ -369,9 +389,12 @@ async function aggiornaSlotOra(oraPreselezionata = '') {
       sel.innerHTML = '<option value="">⚠ Giorno senza ambulatorio</option>';
     } else {
       if (oraPreselezionata) {
+        // Slot passato dall'esterno: mostralo come prima opzione pre-selezionata
         const opt = document.createElement('option');
         opt.value = oraPreselezionata;
-        opt.textContent = `${oraPreselezionata} (attuale)`;
+        opt.textContent = labelAttuale
+          ? `${oraPreselezionata} (attuale)`
+          : oraPreselezionata;
         opt.selected = true;
         sel.appendChild(opt);
       } else {
@@ -381,7 +404,7 @@ async function aggiornaSlotOra(oraPreselezionata = '') {
         sel.appendChild(blank);
       }
       res.slot.forEach(ora => {
-        if (ora === oraPreselezionata) return;
+        if (ora === oraPreselezionata) return; // già mostrato sopra
         const o = document.createElement('option');
         o.value = ora; o.textContent = ora;
         sel.appendChild(o);
@@ -393,12 +416,83 @@ async function aggiornaSlotOra(oraPreselezionata = '') {
   } catch(e) {
     sel.innerHTML = '<option value="">Errore slot</option>';
   }
-  // Opzione orario personalizzato
   const custom = document.createElement('option');
   custom.value = 'custom'; custom.textContent = '⌨ Orario personalizzato...';
   sel.appendChild(custom);
   document.getElementById('app-ora-custom-wrap').classList.add('hidden');
 }
+
+/* ── Popup slot rapido ────────────────────────────────────────────────────── */
+function chiudiSlotPopup() {
+  document.getElementById('slot-popup').classList.add('hidden');
+}
+
+async function apriSlotPopup(dataStr, anchorEl, e) {
+  if (e) e.stopPropagation();
+  chiudiSlotPopup();
+
+  const popup = document.getElementById('slot-popup');
+  popup.innerHTML = '<div class="slot-popup-msg">Caricamento...</div>';
+  popup.classList.remove('hidden');
+
+  // Posiziona il popup sotto l'elemento cliccato
+  const rect = anchorEl.getBoundingClientRect();
+  let top  = rect.bottom + 4;
+  let left = rect.left;
+  // Evita uscita dallo schermo a destra
+  const pw = 160;
+  if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  popup.style.top  = top + 'px';
+  popup.style.left = left + 'px';
+
+  try {
+    const res = await api(`/api/appuntamenti/slot-liberi?data=${dataStr}&durata_minuti=30`);
+    popup.innerHTML = '';
+
+    if (!res.ha_disponibilita) {
+      popup.innerHTML = '<div class="slot-popup-msg">⚠ Giorno senza ambulatorio</div>';
+    } else if (!res.slot.length) {
+      popup.innerHTML = '<div class="slot-popup-msg">Nessuno slot libero</div>';
+    } else {
+      res.slot.slice(0, 8).forEach(ora => {
+        const btn = document.createElement('button');
+        btn.className = 'slot-popup-btn';
+        btn.textContent = ora;
+        btn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          chiudiSlotPopup();
+          apriNuovo(dataStr, ora);
+        });
+        popup.appendChild(btn);
+      });
+      const sep = document.createElement('hr');
+      sep.className = 'slot-popup-sep';
+      popup.appendChild(sep);
+    }
+
+    // Sempre disponibile: apri il modal senza orario pre-selezionato
+    const altro = document.createElement('button');
+    altro.className = 'slot-popup-altro';
+    altro.textContent = '⌨ Altro orario...';
+    altro.addEventListener('click', ev => {
+      ev.stopPropagation();
+      chiudiSlotPopup();
+      apriNuovo(dataStr);
+    });
+    popup.appendChild(altro);
+
+    // Riposiziona ora che abbiamo l'altezza reale
+    if (top + popup.offsetHeight > window.innerHeight - 8) {
+      popup.style.top = (rect.top - popup.offsetHeight - 4) + 'px';
+    }
+  } catch(err) {
+    popup.innerHTML = '<div class="slot-popup-msg">Errore caricamento</div>';
+  }
+}
+
+// Chiudi il popup cliccando fuori
+document.addEventListener('click', chiudiSlotPopup);
+document.getElementById('slot-popup').addEventListener('click', e => e.stopPropagation());
 
 document.getElementById('app-data').addEventListener('change', () => aggiornaSlotOra());
 document.getElementById('tipo-visita-sel').addEventListener('change', () => aggiornaSlotOra());
@@ -554,7 +648,7 @@ function renderLista() {
     hdr.className = 'cal-list-day-hdr';
     hdr.innerHTML = `<span class="cal-list-day-nome">${nomeG} ${g} ${nomeMese(mese-1).toLowerCase()}</span>
       <span class="cal-list-day-n">${appGiorno.length ? appGiorno.length + ' appt' : '+ Aggiungi'}</span>`;
-    hdr.addEventListener('click', () => apriNuovo(dataStr));
+    hdr.addEventListener('click', e => apriSlotPopup(dataStr, hdr, e));
     dayEl.appendChild(hdr);
 
     if (appGiorno.length) {
