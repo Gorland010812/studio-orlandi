@@ -7,49 +7,70 @@
   <link rel="stylesheet" href="/assets/style.css">
   <style>
     body { background:var(--grigio-bg); }
-    .prenota-header { background:linear-gradient(135deg,var(--verde-scuro),var(--verde));
-                      color:#fff; padding:1.25rem 1.5rem; }
-    .prenota-header h1 { font-size:1.3rem; }
-    .prenota-header p  { font-size:.85rem; opacity:.85; }
-    .prenota-body { max-width:780px; margin:0 auto; padding:1.5rem; }
-    .wizard-card  { background:#fff; border-radius:var(--radius); box-shadow:var(--ombra); padding:1.75rem; }
-    .wizard-nav   { display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; }
-    .riepilogo-row { display:flex; justify-content:space-between; padding:.5rem 0;
-                     border-bottom:1px solid var(--grigio-bordo); font-size:.9rem; }
-    .riepilogo-row .lbl { color:#888; }
-    .sedi-footer { background:#fff; border-radius:var(--radius); box-shadow:var(--ombra);
-                   padding:1.25rem 1.5rem; margin-top:1.5rem; }
-    .sedi-footer h3 { font-size:1rem; margin-bottom:.75rem; color:var(--verde-scuro); }
-    .sede-card-pub { border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm);
-                     padding:.75rem 1rem; margin-bottom:.5rem; font-size:.88rem; }
-    .autocomplete-res { position:absolute; background:#fff; border:1.5px solid var(--grigio-bordo);
-                        border-radius:var(--radius-sm); z-index:100; width:100%; max-height:180px;
-                        overflow-y:auto; top:100%; left:0; }
-    .autocomplete-item { padding:.5rem .75rem; cursor:pointer; font-size:.87rem; }
-    .autocomplete-item:hover { background:var(--verde-chiaro); }
-    .success-box { text-align:center; padding:2rem; }
-    .success-icon { font-size:3.5rem; margin-bottom:1rem; }
-    @media (max-width: 768px) {
-      .wizard-nav {
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        background: #fff;
-        border-top: 1px solid var(--grigio-bordo);
-        padding: .85rem 1.25rem;
-        padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px));
-        margin-top: 0;
-        box-shadow: 0 -3px 12px rgba(0,0,0,.08);
-        z-index: 1000;
-      }
-      .wizard-card { padding-bottom: 6rem; }
+
+    /* ── Header fisso con nav integrata ───────────────────────────────────── */
+    .prenota-header {
+      background: linear-gradient(135deg, var(--verde-scuro), var(--verde));
+      color: #fff; padding: .75rem 1rem;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
     }
+    .ph-nav {
+      display: flex; align-items: center; gap: .5rem;
+      max-width: 780px; margin: 0 auto;
+    }
+    .ph-mid { flex: 1; text-align: center; overflow: hidden; min-width: 0; }
+    .ph-mid h1 { font-size: 1.05rem; margin: 0;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ph-mid p  { font-size: .72rem; opacity: .85; margin: 0;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ph-btn {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff; border-radius: var(--radius-sm);
+      padding: .45rem .8rem; font-size: .82rem;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      font-family: inherit; transition: background .12s;
+    }
+    .ph-btn:active { background: rgba(255,255,255,.3); }
+    .ph-btn:disabled { opacity: .35; cursor: default; }
+    .ph-btn.ph-hidden { visibility: hidden; pointer-events: none; }
+
+    /* ── Corpo ────────────────────────────────────────────────────────────── */
+    .prenota-body { max-width: 780px; margin: 0 auto;
+                    padding: 1.5rem; padding-top: calc(1.5rem + 64px); }
+    .wizard-card  { background: #fff; border-radius: var(--radius);
+                    box-shadow: var(--ombra); padding: 1.75rem; }
+    .riepilogo-row { display: flex; justify-content: space-between; padding: .5rem 0;
+                     border-bottom: 1px solid var(--grigio-bordo); font-size: .9rem; }
+    .riepilogo-row .lbl { color: #888; }
+    .sedi-footer { background: #fff; border-radius: var(--radius); box-shadow: var(--ombra);
+                   padding: 1.25rem 1.5rem; margin-top: 1.5rem; }
+    .sedi-footer h3 { font-size: 1rem; margin-bottom: .75rem; color: var(--verde-scuro); }
+    .sede-card-pub { border: 1px solid var(--grigio-bordo); border-radius: var(--radius-sm);
+                     padding: .75rem 1rem; margin-bottom: .5rem; font-size: .88rem; }
+    .autocomplete-res { position: absolute; background: #fff;
+                        border: 1.5px solid var(--grigio-bordo);
+                        border-radius: var(--radius-sm); z-index: 100;
+                        width: 100%; max-height: 180px; overflow-y: auto;
+                        top: 100%; left: 0; }
+    .autocomplete-item { padding: .5rem .75rem; cursor: pointer; font-size: .87rem; }
+    .autocomplete-item:hover { background: var(--verde-chiaro); }
+    .success-box { text-align: center; padding: 2rem; }
+    .success-icon { font-size: 3.5rem; margin-bottom: 1rem; }
   </style>
 </head>
 <body>
 
 <div class="prenota-header">
-  <h1 id="hdr-nome">Studio Orlandi</h1>
-  <p id="hdr-spec"></p>
+  <div class="ph-nav">
+    <button class="ph-btn" id="hdr-back">← Home</button>
+    <div class="ph-mid">
+      <h1 id="hdr-nome">Studio Orlandi</h1>
+      <p id="hdr-spec"></p>
+    </div>
+    <button class="ph-btn" id="hdr-next" disabled>Avanti →</button>
+  </div>
 </div>
 
 <div class="prenota-body">
@@ -84,10 +105,6 @@
     <div class="wizard-panel active" id="panel-1">
       <h2 style="margin-bottom:1.25rem">Seleziona il tipo di visita</h2>
       <div class="tv-cards" id="tv-cards-pub"></div>
-      <div class="wizard-nav">
-        <a href="/" class="btn btn-secondary">← Home</a>
-        <button class="btn btn-primary" id="btn-step1-next" disabled>Avanti →</button>
-      </div>
     </div>
 
     <!-- Step 2: Data e ora -->
@@ -96,17 +113,12 @@
       <p class="text-muted mb-2" id="slot-tipo-label"></p>
       <div id="slot-loading" class="spinner"></div>
       <div class="slot-giorni" id="slot-giorni-pub"></div>
-      <div class="wizard-nav">
-        <button class="btn btn-secondary" id="btn-step2-back">← Indietro</button>
-        <button class="btn btn-primary" id="btn-step2-next" disabled>Avanti →</button>
-      </div>
     </div>
 
     <!-- Step 3: Dati personali -->
     <div class="wizard-panel" id="panel-3">
       <h2 style="margin-bottom:1rem">Dati personali</h2>
 
-      <!-- Fix 9: Nome prima, Cognome dopo -->
       <div class="form-row" style="position:relative">
         <div class="form-group" style="position:relative">
           <label>Nome *</label>
@@ -120,7 +132,6 @@
       </div>
       <div id="autocomplete-msg" class="text-muted hidden" style="font-size:.82rem;margin-bottom:.75rem"></div>
 
-      <!-- Fix 15: data nascita testo gg/mm/aaaa -->
       <div class="form-row">
         <div class="form-group">
           <label>Data di nascita</label>
@@ -132,7 +143,6 @@
         </div>
       </div>
 
-      <!-- Fix 14: provincia/comune con ricerca testo -->
       <div class="form-row">
         <div class="form-group">
           <label>Provincia di nascita</label>
@@ -177,11 +187,6 @@
       </div>
 
       <div class="form-group"><label>Note aggiuntive</label><textarea id="p-note" rows="2"></textarea></div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-secondary" id="btn-step3-back">← Indietro</button>
-        <button class="btn btn-primary" id="btn-step3-next">Avanti →</button>
-      </div>
     </div>
 
     <!-- Step 4: Conferma -->
@@ -195,10 +200,6 @@
           per la gestione dell'appuntamento medico. I dati saranno trattati esclusivamente per finalità sanitarie.</span>
         </label>
       </div>
-      <div class="wizard-nav">
-        <button class="btn btn-secondary" id="btn-step4-back">← Indietro</button>
-        <button class="btn btn-primary btn-lg" id="btn-invia" disabled>Invia richiesta</button>
-      </div>
     </div>
 
     <!-- Successo -->
@@ -209,7 +210,6 @@
         <p style="color:#555;max-width:400px;margin:0 auto 1.5rem">
           La tua richiesta è stata ricevuta. Lo studio ti contatterà al più presto per confermare l'appuntamento.
         </p>
-        <a href="/" class="btn btn-primary">Torna alla home</a>
       </div>
     </div>
 
@@ -230,7 +230,7 @@ let tipoSelezionato = null;
 let slotSelezionato = null;
 let provinceCaricate = false;
 
-/* ── Fix 15: helpers data gg/mm/aaaa ────────────────────────────────────── */
+/* ── helpers data gg/mm/aaaa ─────────────────────────────────────────────── */
 function ddmmyyyyToISO(s) {
   const m = s && s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
@@ -241,6 +241,7 @@ function isoToDDMMYYYY(s) {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
 }
 
+/* ── goStep ──────────────────────────────────────────────────────────────── */
 function goStep(n) {
   [1,2,3,4,'ok'].forEach(s => {
     document.getElementById(`panel-${s}`)?.classList.remove('active');
@@ -257,15 +258,62 @@ function goStep(n) {
     document.getElementById(`step-ind-${n}`)?.classList.add('active');
   }
   stepCorrente = n;
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
+  _syncHdrNav(n);
+}
+
+/* ── Pulsanti header: aggiorna testo/stato/azione per ogni step ──────────── */
+function _syncHdrNav(n) {
+  const back = document.getElementById('hdr-back');
+  const next = document.getElementById('hdr-next');
+  back.classList.remove('ph-hidden');
+  next.classList.remove('ph-hidden');
+  back.disabled = false;
+  next.disabled = false;
+
+  if (n === 1) {
+    back.textContent = '← Home';
+    back.onclick = () => window.location.href = '/';
+    next.textContent = 'Avanti →';
+    next.disabled = !tipoSelezionato;
+    next.onclick = () => { goStep(2); caricaSlot(); };
+
+  } else if (n === 2) {
+    back.textContent = '← Indietro';
+    back.onclick = () => goStep(1);
+    next.textContent = 'Avanti →';
+    next.disabled = !slotSelezionato;
+    next.onclick = () => {
+      goStep(3);
+      if (!provinceCaricate) initProvinceCombobox().then(() => { provinceCaricate = true; });
+    };
+
+  } else if (n === 3) {
+    back.textContent = '← Indietro';
+    back.onclick = () => goStep(2);
+    next.textContent = 'Avanti →';
+    next.onclick = _validateStep3;
+
+  } else if (n === 4) {
+    back.textContent = '← Indietro';
+    back.onclick = () => goStep(3);
+    next.textContent = 'Invia richiesta';
+    next.disabled = !document.getElementById('privacy-check').checked;
+    next.onclick = _inviaRichiesta;
+
+  } else if (n === 'ok') {
+    back.classList.add('ph-hidden');
+    next.textContent = 'Torna alla home';
+    next.onclick = () => window.location.href = '/';
+  }
 }
 
 /* ── Info studio ──────────────────────────────────────────────────────────── */
 (async () => {
   try {
     const info = await api('/api/prenota/info-studio');
-    document.getElementById('hdr-nome').textContent  = info.nome_medico;
-    document.getElementById('hdr-spec').textContent  = info.specializzazioni;
+    document.getElementById('hdr-nome').textContent = info.nome_medico;
+    document.getElementById('hdr-spec').textContent = info.specializzazioni;
     const sediEl = document.getElementById('sedi-pub');
     (info.sedi || []).forEach(s => {
       const d = document.createElement('div');
@@ -293,21 +341,15 @@ function goStep(n) {
         cont.querySelectorAll('.tv-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
         tipoSelezionato = tv;
-        document.getElementById('btn-step1-next').disabled = false;
         goStep(2);
         caricaSlot();
       });
       cont.appendChild(card);
     });
   } catch(e) {
-    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Errore caricamento servizi</div>';
+    document.getElementById('alert-prenota').innerHTML = '<div class="alert alert-error">Errore caricamento servizi</div>';
   }
 })();
-
-document.getElementById('btn-step1-next').addEventListener('click', async () => {
-  goStep(2);
-  caricaSlot();
-});
 
 /* ── Step 2: Slot ────────────────────────────────────────────────────────── */
 async function caricaSlot() {
@@ -336,11 +378,8 @@ async function caricaSlot() {
           document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
           slotSelezionato = { data: g.data, ora };
-          document.getElementById('btn-step2-next').disabled = false;
           goStep(3);
-          if (!provinceCaricate) {
-            initProvinceCombobox().then(() => { provinceCaricate = true; });
-          }
+          if (!provinceCaricate) initProvinceCombobox().then(() => { provinceCaricate = true; });
         });
         slotList.appendChild(btn);
       });
@@ -353,17 +392,7 @@ async function caricaSlot() {
   }
 }
 
-document.getElementById('btn-step2-back').addEventListener('click', () => goStep(1));
-document.getElementById('btn-step2-next').addEventListener('click', () => {
-  goStep(3);
-  if (!provinceCaricate) {
-    initProvinceCombobox().then(() => { provinceCaricate = true; });
-  }
-});
-
-/* ── Step 3: Dati paziente ───────────────────────────────────────────────── */
-
-/* Fix 14: combobox province ─────────────────────────────────────────────── */
+/* ── Step 3: Province / Comuni ───────────────────────────────────────────── */
 let provinceCache = [];
 let comuniCache   = [];
 
@@ -465,7 +494,7 @@ document.getElementById('p-comune-nascita-text').addEventListener('blur', () => 
   setTimeout(() => document.getElementById('comune-res').classList.add('hidden'), 180);
 });
 
-/* Fix 15: CF auto con data testo ─────────────────────────────────────────── */
+/* ── CF automatico ───────────────────────────────────────────────────────── */
 function ricalcolaCFPub() {
   const cognome = document.getElementById('p-cognome').value;
   const nome    = document.getElementById('p-nome').value;
@@ -477,7 +506,6 @@ function ricalcolaCFPub() {
   }
 }
 
-// Auto-slash per data di nascita
 document.getElementById('p-data-nascita').addEventListener('input', function() {
   let raw = this.value.replace(/\D/g, '').slice(0, 8);
   let out = raw;
@@ -491,7 +519,7 @@ document.getElementById('p-data-nascita').addEventListener('input', function() {
   document.getElementById(id).addEventListener('change', ricalcolaCFPub);
 });
 
-/* Verifica paziente esistente (GDPR: no lista, solo match esatto) ─────────── */
+/* ── Verifica paziente esistente ─────────────────────────────────────────── */
 async function verificaPazienteEsistente() {
   const nome    = document.getElementById('p-nome').value.trim();
   const cognome = document.getElementById('p-cognome').value.trim();
@@ -509,7 +537,6 @@ document.getElementById('p-nome').addEventListener('blur', verificaPazienteEsist
 document.getElementById('p-cognome').addEventListener('blur', verificaPazienteEsistente);
 
 async function precompilaPaziente(p) {
-  // Fix 15: converti ISO → gg/mm/aaaa
   document.getElementById('p-data-nascita').value = isoToDDMMYYYY(p.data_nascita);
   document.getElementById('p-sesso').value        = p.sesso || '';
   document.getElementById('p-cf').value           = p.codice_fiscale || '';
@@ -535,30 +562,30 @@ async function precompilaPaziente(p) {
   }
 }
 
-document.getElementById('btn-step3-back').addEventListener('click', () => goStep(2));
-document.getElementById('btn-step3-next').addEventListener('click', () => {
+/* ── Validazione step 3 ──────────────────────────────────────────────────── */
+function _validateStep3() {
   const nome     = document.getElementById('p-nome').value.trim();
   const cognome  = document.getElementById('p-cognome').value.trim();
   const telefono = document.getElementById('p-telefono').value.trim();
   const dn       = document.getElementById('p-data-nascita').value;
   if (!nome || !cognome) {
-    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Nome e cognome obbligatori</div>';
+    document.getElementById('alert-prenota').innerHTML = '<div class="alert alert-error">Nome e cognome obbligatori</div>';
     return;
   }
   if (dn && !ddmmyyyyToISO(dn)) {
-    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Data di nascita non valida (formato gg/mm/aaaa)</div>';
+    document.getElementById('alert-prenota').innerHTML = '<div class="alert alert-error">Data di nascita non valida (formato gg/mm/aaaa)</div>';
     return;
   }
   if (!telefono) {
-    document.getElementById('alert-prenota').innerHTML='<div class="alert alert-error">Il telefono è obbligatorio</div>';
+    document.getElementById('alert-prenota').innerHTML = '<div class="alert alert-error">Il telefono è obbligatorio</div>';
     return;
   }
-  document.getElementById('alert-prenota').innerHTML='';
+  document.getElementById('alert-prenota').innerHTML = '';
   generaRiepilogo();
   goStep(4);
-});
+}
 
-/* ── Step 4: Conferma ────────────────────────────────────────────────────── */
+/* ── Step 4: Riepilogo ───────────────────────────────────────────────────── */
 function generaRiepilogo() {
   const dn_raw = document.getElementById('p-data-nascita').value;
   const righe = [
@@ -578,13 +605,13 @@ function generaRiepilogo() {
 }
 
 document.getElementById('privacy-check').addEventListener('change', function() {
-  document.getElementById('btn-invia').disabled = !this.checked;
+  document.getElementById('hdr-next').disabled = !this.checked;
 });
-document.getElementById('btn-step4-back').addEventListener('click', () => goStep(3));
 
-document.getElementById('btn-invia').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-invia');
-  btn.disabled = true; btn.textContent = 'Invio in corso...';
+/* ── Invio richiesta ─────────────────────────────────────────────────────── */
+async function _inviaRichiesta() {
+  const btn = document.getElementById('hdr-next');
+  btn.disabled = true; btn.textContent = 'Invio...';
   const dataOra = `${slotSelezionato.data}T${slotSelezionato.ora}:00`;
   const dn_raw  = document.getElementById('p-data-nascita').value;
   const body = {
@@ -610,10 +637,13 @@ document.getElementById('btn-invia').addEventListener('click', async () => {
     await api('/api/prenota/richiesta', { method:'POST', body:JSON.stringify(body) });
     goStep('ok');
   } catch(e) {
-    document.getElementById('alert-prenota').innerHTML=`<div class="alert alert-error">${e.message}</div>`;
+    document.getElementById('alert-prenota').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
     btn.disabled = false; btn.textContent = 'Invia richiesta';
   }
-});
+}
+
+/* ── Init nav header ─────────────────────────────────────────────────────── */
+_syncHdrNav(1);
 </script>
 </body>
 </html>
