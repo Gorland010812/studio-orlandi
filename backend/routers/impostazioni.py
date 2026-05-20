@@ -43,6 +43,8 @@ class TipoVisitaCreate(BaseModel):
     colore: str = "#0F6E56"
     attivo: bool = True
     ordine: int = 0
+    costo: Optional[float] = None
+    note: Optional[str] = None
 
 class TipoVisitaUpdate(TipoVisitaCreate):
     nome: Optional[str] = None
@@ -151,6 +153,8 @@ def _tv_to_dict(tv: TipoVisita) -> dict:
     return {
         "id": tv.id, "nome": tv.nome, "durata_minuti": tv.durata_minuti,
         "colore": tv.colore, "attivo": tv.attivo, "ordine": tv.ordine,
+        "costo": float(tv.costo) if tv.costo is not None else None,
+        "note": tv.note,
     }
 
 @router_tipi_visita.get("")

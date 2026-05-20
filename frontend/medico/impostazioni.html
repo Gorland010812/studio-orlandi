@@ -6,7 +6,7 @@
   <title>Impostazioni — Studio Orlandi</title>
   <link rel="stylesheet" href="/assets/style.css">
   <style>
-    .imp-body { background:var(--grigio-bg); min-height:100vh; }
+    .imp-body { background:var(--grigio-bg); min-height:100vh; padding-top:64px; }
     .imp-content { max-width:860px; margin:0 auto; padding:1.5rem; }
     .sede-item { display:flex; align-items:flex-start; gap:.75rem; padding:1rem;
                  border:1px solid var(--grigio-bordo); border-radius:var(--radius-sm); margin-bottom:.75rem; background:#fff; }
@@ -137,8 +137,10 @@
       <div class="form-group"><label>Nome visita *</label><input id="tv-nome"></div>
       <div class="form-row">
         <div class="form-group"><label>Durata (minuti)</label><input id="tv-durata" type="number" min="5" step="5" value="30"></div>
+        <div class="form-group"><label>Costo (€)</label><input id="tv-costo" type="number" min="0" step="0.01" placeholder="es. 80.00"></div>
         <div class="form-group"><label>Colore</label><input id="tv-colore" type="color" value="#0F6E56" style="height:42px;padding:.2rem"></div>
       </div>
+      <div class="form-group"><label>Note (visibili al paziente)</label><textarea id="tv-note" rows="2" placeholder="es. Portare referti precedenti"></textarea></div>
       <div class="form-group">
         <label><input type="checkbox" id="tv-attivo" checked> Attivo</label>
       </div>
@@ -373,7 +375,7 @@ async function caricaTipiVisita() {
     d.innerHTML = `<div class="tv-dot-big" style="background:${tv.colore}"></div>
       <div class="tv-body">
         <div class="tv-nome">${tv.nome}</div>
-        <div class="tv-det">${tv.durata_minuti} min · ${tv.attivo?'Attivo':'Non attivo'}</div>
+        <div class="tv-det">${tv.durata_minuti} min${tv.costo != null ? ' · €' + tv.costo.toFixed(2) : ''} · ${tv.attivo?'Attivo':'Non attivo'}${tv.note ? '<br><span style="font-size:.75rem;color:#aaa">'+tv.note+'</span>' : ''}</div>
       </div>
       <button class="btn btn-secondary btn-sm" onclick="apriEditTV(${tv.id})">Modifica</button>
       <button class="btn btn-danger btn-sm" onclick="eliminaTV(${tv.id})">×</button>`;
@@ -387,6 +389,8 @@ function apriEditTV(id) {
   document.getElementById('tv-modal-title').textContent = 'Modifica tipologia';
   document.getElementById('tv-nome').value    = tv.nome;
   document.getElementById('tv-durata').value  = tv.durata_minuti;
+  document.getElementById('tv-costo').value   = tv.costo != null ? tv.costo : '';
+  document.getElementById('tv-note').value    = tv.note || '';
   document.getElementById('tv-colore').value  = tv.colore;
   document.getElementById('tv-attivo').checked = tv.attivo;
   openModal('modal-tv');
@@ -397,17 +401,22 @@ document.getElementById('btn-nuova-tv').addEventListener('click', () => {
   document.getElementById('tv-modal-title').textContent = 'Nuova tipologia';
   document.getElementById('tv-nome').value   = '';
   document.getElementById('tv-durata').value = 30;
+  document.getElementById('tv-costo').value  = '';
+  document.getElementById('tv-note').value   = '';
   document.getElementById('tv-colore').value = '#0F6E56';
   document.getElementById('tv-attivo').checked = true;
   openModal('modal-tv');
 });
 
 document.getElementById('btn-salva-tv').addEventListener('click', async () => {
+  const costoVal = document.getElementById('tv-costo').value;
   const body = {
     nome:          document.getElementById('tv-nome').value.trim(),
     durata_minuti: parseInt(document.getElementById('tv-durata').value),
     colore:        document.getElementById('tv-colore').value,
     attivo:        document.getElementById('tv-attivo').checked,
+    costo:         costoVal !== '' ? parseFloat(costoVal) : null,
+    note:          document.getElementById('tv-note').value.trim() || null,
   };
   if (!body.nome) { showMsg('Nome obbligatorio', 'error'); return; }
   try {

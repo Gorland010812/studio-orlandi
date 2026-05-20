@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Boolean, Date, DateTime as Timestamp, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, Text, Boolean, Date, DateTime as Timestamp, ForeignKey, CheckConstraint, Numeric
 from sqlalchemy.sql import func
 from database import Base
 
@@ -73,6 +73,8 @@ class TipoVisita(Base):
     colore = Column(Text, default="#0F6E56")
     attivo = Column(Boolean, default=True)
     ordine = Column(Integer, default=0)
+    costo = Column(Numeric(10, 2), nullable=True)
+    note = Column(Text, nullable=True)
 
 
 class Disponibilita(Base):

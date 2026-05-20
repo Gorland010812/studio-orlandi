@@ -53,6 +53,20 @@ SEDE_DEFAULT = {
 }
 
 
+def migrate_db():
+    """Aggiunge colonne mancanti a tabelle esistenti (idempotente)."""
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(tipi_visita)"))}
+        if "costo" not in cols:
+            conn.execute(text("ALTER TABLE tipi_visita ADD COLUMN costo REAL"))
+            print("Migrazione: aggiunta colonna tipi_visita.costo")
+        if "note" not in cols:
+            conn.execute(text("ALTER TABLE tipi_visita ADD COLUMN note TEXT"))
+            print("Migrazione: aggiunta colonna tipi_visita.note")
+        conn.commit()
+
+
 def init_db():
     print("Creazione tabelle...")
     Base.metadata.create_all(bind=engine)
@@ -103,4 +117,5 @@ def init_db():
 
 
 if __name__ == "__main__":
+    migrate_db()
     init_db()

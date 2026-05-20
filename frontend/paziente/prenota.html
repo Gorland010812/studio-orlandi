@@ -29,19 +29,19 @@
     .autocomplete-item:hover { background:var(--verde-chiaro); }
     .success-box { text-align:center; padding:2rem; }
     .success-icon { font-size:3.5rem; margin-bottom:1rem; }
-    /* Fix 10: pulsante Continua fisso in fondo su mobile */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .wizard-nav {
         position: fixed;
         bottom: 0; left: 0; right: 0;
         background: #fff;
         border-top: 1px solid var(--grigio-bordo);
         padding: .85rem 1.25rem;
+        padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px));
         margin-top: 0;
         box-shadow: 0 -3px 12px rgba(0,0,0,.08);
-        z-index: 100;
+        z-index: 1000;
       }
-      .wizard-card { padding-bottom: 5rem; }
+      .wizard-card { padding-bottom: 6rem; }
     }
   </style>
 </head>
@@ -294,6 +294,8 @@ function goStep(n) {
         card.classList.add('selected');
         tipoSelezionato = tv;
         document.getElementById('btn-step1-next').disabled = false;
+        goStep(2);
+        caricaSlot();
       });
       cont.appendChild(card);
     });
@@ -335,6 +337,10 @@ async function caricaSlot() {
           btn.classList.add('selected');
           slotSelezionato = { data: g.data, ora };
           document.getElementById('btn-step2-next').disabled = false;
+          goStep(3);
+          if (!provinceCaricate) {
+            initProvinceCombobox().then(() => { provinceCaricate = true; });
+          }
         });
         slotList.appendChild(btn);
       });

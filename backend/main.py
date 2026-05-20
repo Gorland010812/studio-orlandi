@@ -41,7 +41,8 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from init_db import init_db
+    from init_db import migrate_db, init_db
+    migrate_db()
     init_db()
     yield
 
