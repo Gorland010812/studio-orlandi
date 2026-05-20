@@ -47,6 +47,10 @@
     .cal-cell.no-disp:hover { background:#f9f9f9; }
     .cal-list-day.no-disp { opacity:.38; }
     .cal-list-day.no-disp .cal-list-day-hdr { cursor:default; }
+    /* Giorni passati: non cliccabili */
+    .cal-cell.passato { opacity:.28; background:#f5f5f5; cursor:default !important; }
+    .cal-cell.passato:hover { background:#f5f5f5; }
+    .cal-cell.passato .cal-day-num { color:#bbb; }
     /* Ora slot */
     .ora-custom-wrap { margin-top:.35rem; }
     /* Popup slot rapido */
@@ -228,6 +232,7 @@ function renderCalendario() {
   const primoGiorno = new Date(anno, mese-1, 1);
   const ultimoGiorno = new Date(anno, mese, 0);
   const oggi = new Date();
+  const oggiISO = dataOggiISO();
 
   let offset = primoGiorno.getDay() - 1;
   if (offset < 0) offset = 6;
@@ -243,6 +248,7 @@ function renderCalendario() {
   for (let g = 1; g <= ultimoGiorno.getDate(); g++) {
     const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
     const isOggi = oggi.getFullYear()===anno && oggi.getMonth()===mese-1 && oggi.getDate()===g;
+    const isPassato = dataStr < oggiISO;
     const d = new Date(anno, mese-1, g);
     const dow = d.getDay() === 0 ? 6 : d.getDay() - 1; // 0=Lun
     const hasDisp = dispSet.size === 0 || dispSet.has(dow);
@@ -250,8 +256,16 @@ function renderCalendario() {
     const cell = document.createElement('div');
     cell.dataset.data = dataStr;
 
+    // Giorno passato: grigio, nessun evento, non cliccabile
+    if (isPassato) {
+      cell.className = 'cal-cell passato';
+      cell.innerHTML = `<div class="cal-day-num">${g}</div>`;
+      grid.appendChild(cell);
+      continue;
+    }
+
     if (!hasDisp) {
-      // Fix 17: giorno senza ambulatorio
+      // Giorno senza ambulatorio
       cell.className = 'cal-cell no-disp' + (isOggi ? ' oggi' : '');
       cell.innerHTML = `<div class="cal-day-num">${g}</div>`;
       grid.appendChild(cell);
@@ -630,12 +644,14 @@ function renderLista() {
   list.innerHTML = '';
   const ultimoGiorno = new Date(anno, mese, 0).getDate();
   const oggi = new Date();
+  const oggiISO = dataOggiISO();
   const isMeseCorrente = oggi.getFullYear() === anno && oggi.getMonth() + 1 === mese;
-  // Mese corrente: parti da oggi; mesi passati/futuri: parti dal giorno 1
-  const giornoDa = isMeseCorrente ? oggi.getDate() : 1;
 
-  for (let g = giornoDa; g <= ultimoGiorno; g++) {
+  for (let g = 1; g <= ultimoGiorno; g++) {
     const dataStr = `${anno}-${String(mese).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
+    // Salta giorni passati (precedenti a oggi)
+    if (dataStr < oggiISO) continue;
+
     const d = new Date(anno, mese-1, g);
     const isOggi = isMeseCorrente && g === oggi.getDate();
     const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
