@@ -1,12 +1,26 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.gzip import GZipMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith('/assets/'):
+            response.headers['Cache-Control'] = 'public, max-age=86400'
+        elif not path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-cache'
+        return response
+
 
 from routers.auth import router as auth_router
 from routers.pazienti import router as pazienti_router
@@ -70,6 +84,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+app.add_middleware(CacheControlMiddleware)
 
 
 # ── Error handlers ────────────────────────────────────────────────────────────
