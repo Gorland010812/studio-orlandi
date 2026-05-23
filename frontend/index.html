@@ -2,66 +2,9 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=/medico/login.html">
   <title>Studio Orlandi</title>
-  <link rel="stylesheet" href="/assets/style.css">
-  <style>
-    body { margin:0; }
-    .servizi-list { list-style: none; margin-top: .5rem; }
-    .servizi-list li { font-size: .9rem; opacity: .85; padding: .1rem 0; }
-    .index-footer { text-align:center; color:rgba(255,255,255,.5); font-size:.8rem; padding-bottom:2rem; }
-    .sedi-info { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; padding:0 1.5rem 2rem; }
-    .sede-chip { background:rgba(255,255,255,.15); color:#fff; border-radius:8px; padding:.6rem 1.1rem; font-size:.85rem; }
-  </style>
+  <script>window.location.replace('/medico/login.html');</script>
 </head>
-<body class="index-body">
-  <div class="index-header">
-    <h1 id="nome-medico">Studio Orlandi</h1>
-    <div id="specializzazioni"></div>
-    <p class="spec" id="testo-home"></p>
-    <ul class="servizi-list" id="servizi-list"></ul>
-  </div>
-
-  <div class="index-cards">
-    <a href="/medico/login.html" class="index-card">
-      <div class="card-icon">🩺</div>
-      <h2>Area Medico</h2>
-      <p>Accesso con password per gestione pazienti e appuntamenti</p>
-    </a>
-    <a href="/paziente/prenota.html" class="index-card">
-      <div class="card-icon">📅</div>
-      <h2>Prenota una Visita</h2>
-      <p>Richiedi un appuntamento online in pochi passi</p>
-    </a>
-  </div>
-
-  <div class="sedi-info" id="sedi-info"></div>
-  <div class="index-footer">Studio Orlandi — Dott. Goffredo Orlandi</div>
-
-  <script src="/assets/app.js"></script>
-  <script>
-    (async () => {
-      try {
-        const info = await api('/api/prenota/info-studio');
-        document.getElementById('nome-medico').textContent = info.nome_medico;
-        const specEl = document.getElementById('specializzazioni');
-        (info.specializzazioni || '').split('\n').filter(Boolean).forEach(s => {
-          const p = document.createElement('p'); p.className = 'spec'; p.textContent = s; specEl.appendChild(p);
-        });
-        document.getElementById('testo-home').textContent = info.testo_home;
-        const sl = document.getElementById('servizi-list');
-        (info.servizi || '').split('\n').filter(Boolean).forEach(s => {
-          const li = document.createElement('li'); li.textContent = s; sl.appendChild(li);
-        });
-        const si = document.getElementById('sedi-info');
-        (info.sedi || []).forEach(s => {
-          const chip = document.createElement('div');
-          chip.className = 'sede-chip';
-          chip.innerHTML = `<strong>${s.nome}</strong>${s.citta ? ' · '+s.citta : ''}${s.telefono ? ' · '+s.telefono : ''}`;
-          si.appendChild(chip);
-        });
-      } catch(e) { /* ignora — mostra valori default */ }
-    })();
-  </script>
-</body>
+<body></body>
 </html>
