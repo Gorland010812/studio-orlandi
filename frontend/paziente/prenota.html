@@ -295,8 +295,12 @@ function _syncHdrNav(n) {
 
   } else if (n === 'ok') {
     back.classList.add('ph-hidden');
-    next.textContent = 'Torna alla home';
-    next.onclick = () => window.location.href = '/';
+    next.textContent = 'Nuova prenotazione';
+    next.onclick = () => {
+      tipoSelezionato = null;
+      slotSelezionato = null;
+      goStep(1);
+    };
   }
 }
 
