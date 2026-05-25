@@ -272,21 +272,13 @@ function _syncHdrNav(n) {
   next.disabled = false;
 
   if (n === 1) {
-    back.textContent = '← Home';
-    back.onclick = () => window.location.href = '/';
-    next.textContent = 'Avanti →';
-    next.disabled = !tipoSelezionato;
-    next.onclick = () => { goStep(2); caricaSlot(); };
+    back.classList.add('ph-hidden');
+    next.classList.add('ph-hidden');
 
   } else if (n === 2) {
     back.textContent = '← Indietro';
     back.onclick = () => goStep(1);
-    next.textContent = 'Avanti →';
-    next.disabled = !slotSelezionato;
-    next.onclick = () => {
-      goStep(3);
-      if (!provinceCaricate) initProvinceCombobox().then(() => { provinceCaricate = true; });
-    };
+    next.classList.add('ph-hidden');
 
   } else if (n === 3) {
     back.textContent = '← Indietro';
