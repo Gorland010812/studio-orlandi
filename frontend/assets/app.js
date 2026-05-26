@@ -104,11 +104,14 @@ function calcolaCodiceFiscale(cognome, nome, dataNascita, sesso, codiceBelfiore)
 }
 
 /* ── Comuni helper ──────────────────────────────────────────────────────────── */
+let _provinceCache = null;
 async function caricaProvince(selectEl) {
   try {
-    const province = await api('/api/comuni/province');
+    if (!_provinceCache) {
+      _provinceCache = await api('/api/comuni/province');
+    }
     selectEl.innerHTML = '<option value="">— Seleziona provincia —</option>';
-    province.forEach(p => {
+    _provinceCache.forEach(p => {
       const o = document.createElement('option');
       o.value = p.sigla; o.textContent = `${p.sigla} — ${p.nome}`;
       selectEl.appendChild(o);

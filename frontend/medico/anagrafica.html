@@ -198,7 +198,15 @@
 if (!requireAuth()) throw '';
 
 let pazienti = [], pazienteCorrente = null, indiceCorrente = -1;
-let provinceLoaded = false;
+
+function normalizzaAnno(s) {
+  if (!s) return s;
+  const m = s.match(/^(\d{1,4})-(\d{2})-(\d{2})$/);
+  if (!m) return s;
+  let y = parseInt(m[1], 10);
+  if (y < 100) y += 1900;
+  return `${String(y).padStart(4, '0')}-${m[2]}-${m[3]}`;
+}
 
 /* ── Lista pazienti ──────────────────────────────────────────────────────── */
 async function caricaLista(q = '') {
@@ -256,7 +264,7 @@ function renderScheda(p) {
 
   const campi = {
     'f-cognome': p.cognome, 'f-nome': p.nome,
-    'f-data-nascita': p.data_nascita || '',
+    'f-data-nascita': normalizzaAnno(p.data_nascita) || '',
     'f-luogo-nascita': p.luogo_nascita || '',
     'f-cf': p.codice_fiscale || '',
     'f-indirizzo': p.indirizzo || '', 'f-cap': p.cap || '',
@@ -276,24 +284,14 @@ function renderScheda(p) {
   // Carica province e preseleziona
   const selProv = document.getElementById('f-prov-nascita');
   const selCom  = document.getElementById('f-comune-nascita');
-  if (!provinceLoaded) {
-    caricaProvince(selProv).then(() => {
-      provinceLoaded = true;
-      if (p.provincia_nascita) {
-        selProv.value = p.provincia_nascita;
-        caricaComuni(p.provincia_nascita, selCom).then(() => {
-          if (p.codice_comune_nascita) selCom.value = p.codice_comune_nascita;
-        });
-      }
-    });
-  } else {
+  caricaProvince(selProv).then(() => {
     if (p.provincia_nascita) {
       selProv.value = p.provincia_nascita;
       caricaComuni(p.provincia_nascita, selCom).then(() => {
         if (p.codice_comune_nascita) selCom.value = p.codice_comune_nascita;
       });
     }
-  }
+  });
 
   selProv.addEventListener('change', () => {
     if (selProv.value) caricaComuni(selProv.value, selCom);
@@ -364,7 +362,7 @@ async function salvaPaziente() {
   const body = {
     cognome:             document.getElementById('f-cognome').value.trim(),
     nome:                document.getElementById('f-nome').value.trim(),
-    data_nascita:        document.getElementById('f-data-nascita').value || null,
+    data_nascita:        normalizzaAnno(document.getElementById('f-data-nascita').value) || null,
     sesso:               document.getElementById('f-sesso').value || null,
     codice_comune_nascita: selCom?.value || null,
     provincia_nascita:   document.getElementById('f-prov-nascita').value || null,
