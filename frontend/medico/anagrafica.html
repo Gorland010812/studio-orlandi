@@ -117,12 +117,14 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Provincia di nascita</label>
-            <select id="f-prov-nascita"><option value="">— Seleziona —</option></select>
+            <label>Comune di nascita</label>
+            <input id="f-comune-nascita-cerca" list="list-comuni-nasc" autocomplete="off" placeholder="Digita il comune...">
+            <datalist id="list-comuni-nasc"></datalist>
+            <input id="f-comune-nascita" type="hidden">
           </div>
           <div class="form-group">
-            <label>Comune di nascita</label>
-            <select id="f-comune-nascita"><option value="">— Prima seleziona provincia —</option></select>
+            <label>Provincia di nascita</label>
+            <input id="f-prov-nascita" maxlength="2" style="text-transform:uppercase" placeholder="Sigla (auto)">
           </div>
         </div>
         <div class="form-group">
@@ -137,21 +139,19 @@
 
       <div class="form-section">
         <h4>Residenza</h4>
-        <div class="form-group"><label>Indirizzo</label><input id="f-indirizzo"></div>
+        <div class="form-group">
+          <label>Comune</label>
+          <input id="f-comune-res" list="list-comuni-res" autocomplete="off" placeholder="Digita il comune...">
+          <datalist id="list-comuni-res"></datalist>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Provincia</label>
-            <select id="f-prov-res"><option value="">— Seleziona —</option></select>
+            <input id="f-prov-res" maxlength="2" style="text-transform:uppercase" placeholder="Sigla (auto)">
           </div>
-          <div class="form-group">
-            <label>Comune</label>
-            <select id="f-comune-res"><option value="">— Prima seleziona provincia —</option></select>
-          </div>
-        </div>
-        <div class="form-row">
           <div class="form-group"><label>CAP</label><input id="f-cap" maxlength="5"></div>
-          <div class="form-group"><label>Città (libero)</label><input id="f-citta" placeholder="Usato se comune non in lista"></div>
         </div>
+        <div class="form-group"><label>Indirizzo</label><input id="f-indirizzo"></div>
       </div>
     </div>
 
@@ -274,10 +274,14 @@ function renderScheda(p) {
   const campi = {
     'f-cognome': p.cognome, 'f-nome': p.nome,
     'f-data-nascita': normalizzaAnno(p.data_nascita) || '',
+    'f-comune-nascita-cerca': p.luogo_nascita || '',
+    'f-comune-nascita': p.codice_comune_nascita || '',
+    'f-prov-nascita': p.provincia_nascita || '',
     'f-luogo-nascita': p.luogo_nascita || '',
     'f-cf': p.codice_fiscale || '',
+    'f-comune-res': p.citta_residenza || '',
+    'f-prov-res': p.provincia_residenza || '',
     'f-indirizzo': p.indirizzo || '', 'f-cap': p.cap || '',
-    'f-citta': p.citta_residenza || '',
     'f-telefono': p.telefono || '', 'f-email': p.email || '',
     'f-medico-base': p.medico_base || '', 'f-inviato-da': p.inviato_da || '',
     'f-note': p.note || '', 'f-professione': p.professione || '',
@@ -290,47 +294,60 @@ function renderScheda(p) {
   document.getElementById('f-sesso').value = p.sesso || '';
   document.getElementById('f-stato-civile').value = p.stato_civile || '';
 
-  // Carica province e preseleziona
-  const selProv = document.getElementById('f-prov-nascita');
-  const selCom  = document.getElementById('f-comune-nascita');
-  caricaProvince(selProv).then(() => {
-    if (p.provincia_nascita) {
-      selProv.value = p.provincia_nascita;
-      caricaComuni(p.provincia_nascita, selCom).then(() => {
-        if (p.codice_comune_nascita) selCom.value = p.codice_comune_nascita;
+  // Autocomplete comune nascita
+  const inputNasc     = document.getElementById('f-comune-nascita-cerca');
+  const listNasc      = document.getElementById('list-comuni-nasc');
+  const hiddenNasc    = document.getElementById('f-comune-nascita');
+  let _nascData = [];
+  inputNasc.addEventListener('input', async () => {
+    const q = inputNasc.value.trim();
+    if (q.length < 2) return;
+    try {
+      _nascData = await api(`/api/comuni/cerca/${encodeURIComponent(q)}`);
+      listNasc.innerHTML = '';
+      _nascData.forEach(c => {
+        const o = document.createElement('option');
+        o.value = `${c.nome} (${c.sigla_provincia})`;
+        listNasc.appendChild(o);
       });
+    } catch(e) {}
+  });
+  inputNasc.addEventListener('change', () => {
+    const q = inputNasc.value.trim();
+    const match = _nascData.find(c => `${c.nome} (${c.sigla_provincia})` === q || c.nome.toLowerCase() === q.toLowerCase());
+    if (match) {
+      hiddenNasc.value = match.codice_istat;
+      document.getElementById('f-prov-nascita').value = match.sigla_provincia;
+      ricalcolaCF();
+    } else {
+      hiddenNasc.value = '';
     }
   });
 
-  selProv.addEventListener('change', () => {
-    if (selProv.value) caricaComuni(selProv.value, selCom);
-    else selCom.innerHTML = '<option value="">— Prima seleziona provincia —</option>';
-  });
-
-  // Province/comuni residenza
-  const selProvRes   = document.getElementById('f-prov-res');
-  const selComuneRes = document.getElementById('f-comune-res');
-  caricaProvince(selProvRes).then(() => {
-    if (p.provincia_residenza) {
-      selProvRes.value = p.provincia_residenza;
-      caricaComuni(p.provincia_residenza, selComuneRes).then(() => {
-        if (p.citta_residenza) {
-          const match = Array.from(selComuneRes.options)
-            .find(o => o.dataset.nome?.toLowerCase() === p.citta_residenza.toLowerCase());
-          if (match) selComuneRes.value = match.value;
-        }
+  // Autocomplete comune residenza
+  const inputRes  = document.getElementById('f-comune-res');
+  const listRes   = document.getElementById('list-comuni-res');
+  let _resData = [];
+  inputRes.addEventListener('input', async () => {
+    const q = inputRes.value.trim();
+    if (q.length < 2) return;
+    try {
+      _resData = await api(`/api/comuni/cerca/${encodeURIComponent(q)}`);
+      listRes.innerHTML = '';
+      _resData.forEach(c => {
+        const o = document.createElement('option');
+        o.value = `${c.nome} (${c.sigla_provincia})`;
+        listRes.appendChild(o);
       });
-    }
+    } catch(e) {}
   });
-  selProvRes.addEventListener('change', () => {
-    if (selProvRes.value) caricaComuni(selProvRes.value, selComuneRes);
-    else selComuneRes.innerHTML = '<option value="">— Prima seleziona provincia —</option>';
-  });
-  selComuneRes.addEventListener('change', () => {
-    const opt = selComuneRes.selectedOptions[0];
-    if (opt?.dataset.nome) {
-      document.getElementById('f-citta').value = opt.dataset.nome;
-      if (opt.dataset.cap) document.getElementById('f-cap').value = opt.dataset.cap;
+  inputRes.addEventListener('change', () => {
+    const q = inputRes.value.trim();
+    const match = _resData.find(c => `${c.nome} (${c.sigla_provincia})` === q || c.nome.toLowerCase() === q.toLowerCase());
+    if (match) {
+      inputRes.value = match.nome;
+      document.getElementById('f-prov-res').value = match.sigla_provincia;
+      document.getElementById('f-cap').value = match.cap || '';
     }
   });
 
@@ -338,7 +355,6 @@ function renderScheda(p) {
   ['f-cognome','f-nome','f-data-nascita','f-sesso'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', ricalcolaCF);
   });
-  selCom.addEventListener('change', ricalcolaCF);
 
   // Duplicati
   ['f-cognome','f-nome'].forEach(id => {
@@ -364,9 +380,7 @@ function ricalcolaCF() {
   const nome    = document.getElementById('f-nome')?.value;
   const dn      = document.getElementById('f-data-nascita')?.value;
   const sesso   = document.getElementById('f-sesso')?.value;
-  const selCom  = document.getElementById('f-comune-nascita');
-  const opt     = selCom?.selectedOptions[0];
-  const codice  = selCom?.value;
+  const codice  = document.getElementById('f-comune-nascita')?.value;
   if (cognome && nome && dn && sesso && codice) {
     const cf = calcolaCodiceFiscale(cognome, nome, dn, sesso, codice);
     document.getElementById('f-cf').value = cf;
@@ -393,20 +407,18 @@ async function salvaPaziente() {
   btn.disabled = true; btn.textContent = 'Salvataggio...';
   const alert = document.getElementById('alert-scheda');
   alert.innerHTML = '';
-  const selCom = document.getElementById('f-comune-nascita');
-  const opt = selCom?.selectedOptions[0];
   const body = {
     cognome:             document.getElementById('f-cognome').value.trim(),
     nome:                document.getElementById('f-nome').value.trim(),
     data_nascita:        normalizzaAnno(document.getElementById('f-data-nascita').value) || null,
     sesso:               document.getElementById('f-sesso').value || null,
-    codice_comune_nascita: selCom?.value || null,
-    provincia_nascita:   document.getElementById('f-prov-nascita').value || null,
-    luogo_nascita:       opt?.dataset.nome || document.getElementById('f-luogo-nascita').value || null,
+    codice_comune_nascita: document.getElementById('f-comune-nascita').value || null,
+    provincia_nascita:   document.getElementById('f-prov-nascita').value.toUpperCase() || null,
+    luogo_nascita:       document.getElementById('f-comune-nascita-cerca').value || document.getElementById('f-luogo-nascita').value || null,
     codice_fiscale:      document.getElementById('f-cf').value.trim() || null,
     indirizzo:           document.getElementById('f-indirizzo').value || null,
     cap:                 document.getElementById('f-cap').value || null,
-    citta_residenza:     document.getElementById('f-citta').value || null,
+    citta_residenza:     document.getElementById('f-comune-res').value || null,
     provincia_residenza: document.getElementById('f-prov-res').value.toUpperCase() || null,
     telefono:            document.getElementById('f-telefono').value || null,
     email:               document.getElementById('f-email').value || null,
