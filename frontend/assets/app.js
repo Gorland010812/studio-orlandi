@@ -129,6 +129,7 @@ async function caricaComuni(sigla, selectEl) {
       o.value = c.codice_istat;
       o.textContent = c.nome;
       o.dataset.nome = c.nome;
+      o.dataset.cap = c.cap || '';
       selectEl.appendChild(o);
     });
   } catch(e) { selectEl.innerHTML = '<option value="">Errore caricamento</option>'; }

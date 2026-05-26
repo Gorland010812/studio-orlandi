@@ -139,9 +139,18 @@
         <h4>Residenza</h4>
         <div class="form-group"><label>Indirizzo</label><input id="f-indirizzo"></div>
         <div class="form-row">
+          <div class="form-group">
+            <label>Provincia</label>
+            <select id="f-prov-res"><option value="">— Seleziona —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Comune</label>
+            <select id="f-comune-res"><option value="">— Prima seleziona provincia —</option></select>
+          </div>
+        </div>
+        <div class="form-row">
           <div class="form-group"><label>CAP</label><input id="f-cap" maxlength="5"></div>
-          <div class="form-group"><label>Città</label><input id="f-citta"></div>
-          <div class="form-group"><label>Provincia</label><input id="f-prov-res" maxlength="2" style="text-transform:uppercase"></div>
+          <div class="form-group"><label>Città (libero)</label><input id="f-citta" placeholder="Usato se comune non in lista"></div>
         </div>
       </div>
     </div>
@@ -268,7 +277,7 @@ function renderScheda(p) {
     'f-luogo-nascita': p.luogo_nascita || '',
     'f-cf': p.codice_fiscale || '',
     'f-indirizzo': p.indirizzo || '', 'f-cap': p.cap || '',
-    'f-citta': p.citta_residenza || '', 'f-prov-res': p.provincia_residenza || '',
+    'f-citta': p.citta_residenza || '',
     'f-telefono': p.telefono || '', 'f-email': p.email || '',
     'f-medico-base': p.medico_base || '', 'f-inviato-da': p.inviato_da || '',
     'f-note': p.note || '', 'f-professione': p.professione || '',
@@ -296,6 +305,33 @@ function renderScheda(p) {
   selProv.addEventListener('change', () => {
     if (selProv.value) caricaComuni(selProv.value, selCom);
     else selCom.innerHTML = '<option value="">— Prima seleziona provincia —</option>';
+  });
+
+  // Province/comuni residenza
+  const selProvRes   = document.getElementById('f-prov-res');
+  const selComuneRes = document.getElementById('f-comune-res');
+  caricaProvince(selProvRes).then(() => {
+    if (p.provincia_residenza) {
+      selProvRes.value = p.provincia_residenza;
+      caricaComuni(p.provincia_residenza, selComuneRes).then(() => {
+        if (p.citta_residenza) {
+          const match = Array.from(selComuneRes.options)
+            .find(o => o.dataset.nome?.toLowerCase() === p.citta_residenza.toLowerCase());
+          if (match) selComuneRes.value = match.value;
+        }
+      });
+    }
+  });
+  selProvRes.addEventListener('change', () => {
+    if (selProvRes.value) caricaComuni(selProvRes.value, selComuneRes);
+    else selComuneRes.innerHTML = '<option value="">— Prima seleziona provincia —</option>';
+  });
+  selComuneRes.addEventListener('change', () => {
+    const opt = selComuneRes.selectedOptions[0];
+    if (opt?.dataset.nome) {
+      document.getElementById('f-citta').value = opt.dataset.nome;
+      if (opt.dataset.cap) document.getElementById('f-cap').value = opt.dataset.cap;
+    }
   });
 
   // CF auto
