@@ -432,6 +432,20 @@ async function salvaPaziente() {
     titolo_studio:       document.getElementById('f-titolo-studio').value || null,
     stato_civile:        document.getElementById('f-stato-civile').value || null,
   };
+  const cognomeLower = body.cognome.toLowerCase();
+  const nomeLower    = body.nome.toLowerCase();
+  const duplic = pazienti.find(p =>
+    p.id !== pazienteCorrente.id &&
+    p.cognome.toLowerCase() === cognomeLower &&
+    p.nome.toLowerCase() === nomeLower
+  );
+  if (duplic) {
+    if (!confirm(`Esiste già un paziente con questo nome (${duplic.cognome} ${duplic.nome}). Continuare?`)) {
+      btn.disabled = false; btn.textContent = 'Salva paziente';
+      return;
+    }
+  }
+
   try {
     const updated = await api(`/api/pazienti/${pazienteCorrente.id}`, { method:'PUT', body:JSON.stringify(body) });
     pazienteCorrente = updated;
@@ -448,11 +462,19 @@ async function salvaPaziente() {
 
 async function eliminaPaziente() {
   if (!confirm(`Eliminare ${pazienteCorrente.cognome} ${pazienteCorrente.nome}?`)) return;
+  const idxElim = indiceCorrente;
   try {
     await api(`/api/pazienti/${pazienteCorrente.id}`, { method:'DELETE' });
-    pazienteCorrente = null; indiceCorrente = -1;
-    document.getElementById('anag-main').innerHTML = '<div class="empty-state"><div class="e-icon">✅</div><p>Paziente eliminato.</p></div>';
+    pazienteCorrente = null;
+    indiceCorrente = -1;
     await caricaLista();
+    if (pazienti.length === 0) {
+      document.getElementById('anag-main').innerHTML = '<div class="empty-state"><div class="e-icon">✅</div><p>Nessun paziente.</p></div>';
+    } else if (idxElim > 0) {
+      apriPaziente(pazienti[idxElim - 1].id, idxElim - 1);
+    } else {
+      apriPaziente(pazienti[0].id, 0);
+    }
   } catch(e) { alert('Errore: ' + e.message); }
 }
 
