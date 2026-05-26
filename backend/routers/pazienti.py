@@ -3,10 +3,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 
 from database import get_db
-from models import Paziente, ComuneItaliano
+from models import Paziente, ComuneItaliano, Appuntamento
 from routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/pazienti", tags=["pazienti"])
@@ -283,8 +284,13 @@ def elimina_paziente(
     p = db.query(Paziente).filter(Paziente.id == paziente_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Paziente non trovato")
+    db.query(Appuntamento).filter(Appuntamento.paziente_id == paziente_id).delete()
     db.delete(p)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Impossibile eliminare il paziente: esistono dati collegati")
 
 
 @router.get("/{paziente_id}/duplicati")

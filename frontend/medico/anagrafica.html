@@ -442,6 +442,7 @@ async function salvaPaziente() {
   if (duplic) {
     if (!confirm(`Esiste già un paziente con questo nome (${duplic.cognome} ${duplic.nome}). Continuare?`)) {
       btn.disabled = false; btn.textContent = 'Salva paziente';
+      apriPaziente(pazienteCorrente.id);
       return;
     }
   }
