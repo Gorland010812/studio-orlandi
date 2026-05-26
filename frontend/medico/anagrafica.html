@@ -294,6 +294,9 @@ function renderScheda(p) {
   document.getElementById('f-sesso').value = p.sesso || '';
   document.getElementById('f-stato-civile').value = p.stato_civile || '';
 
+  if (p.cognome === 'Nuovo') { const el = document.getElementById('f-cognome'); el.focus(); el.select(); }
+  else if (p.nome === 'Paziente') { const el = document.getElementById('f-nome'); el.focus(); el.select(); }
+
   // Autocomplete comune nascita
   const inputNasc     = document.getElementById('f-comune-nascita-cerca');
   const listNasc      = document.getElementById('list-comuni-nasc');
