@@ -392,6 +392,10 @@
 <script>
 const API_BASE = 'https://dxp2800-893f.tail6037e7.ts.net';
 
+/** Converte un percorso relativo /api/... nell'URL assoluto del NAS.
+ *  Se il valore è già un data: URL (base64 legacy) lo usa com'è. */
+const fotoUrl = (s) => s && s.startsWith('data:') ? s : s ? API_BASE + s : null;
+
 function hideLoader() {
   const ov = document.getElementById('loading-overlay');
   if (!ov) return;
@@ -435,7 +439,7 @@ function hideLoader() {
     /* ── Hero: foto medico ── */
     if (foto.hero) {
       const img = document.getElementById('hero-foto-img');
-      img.src = foto.hero;
+      img.src = fotoUrl(foto.hero);
       img.style.display = 'block';
       document.getElementById('hero-foto-empty').style.display = 'none';
     }
@@ -443,7 +447,7 @@ function hideLoader() {
     /* ── Hero: logo personalizzato ── */
     if (foto.logo) {
       document.getElementById('hero-logo-wrap').innerHTML =
-        `<img src="${foto.logo}" alt="Logo studio">`;
+        `<img src="${fotoUrl(foto.logo)}" alt="Logo studio">`;
     }
 
     /* ── Chi sono: bio ── */
@@ -456,7 +460,7 @@ function hideLoader() {
     if (chisonoFotos.length) {
       chisonoFotos.forEach((src, i) => {
         const img = document.createElement('img');
-        img.src = src;
+        img.src = fotoUrl(src);
         img.alt = (imp.nome_medico || 'Medico') + ' — foto ' + (i + 1);
         img.loading = 'lazy';
         gallery.appendChild(img);

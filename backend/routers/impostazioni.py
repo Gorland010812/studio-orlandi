@@ -1,5 +1,7 @@
+import base64
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -254,12 +256,14 @@ def get_contenuti_sito(db: Session = Depends(get_db)):
     sedi = db.query(Sede).filter(Sede.attiva == True).order_by(Sede.ordine, Sede.id).all()
     tv = db.query(TipoVisita).filter(TipoVisita.attivo == True).order_by(TipoVisita.ordine, TipoVisita.id).all()
     foto_rows = db.query(FotoSito).all()
-    foto = {f.tipo: f.immagine_base64 for f in foto_rows if f.immagine_base64}
+    # Restituiamo URL invece di base64: il client carica le immagini on-demand
+    foto_tipi = {f.tipo for f in foto_rows if f.immagine_base64}
+    foto_urls = {tipo: f"/api/sito/foto/{tipo}" for tipo in foto_tipi}
 
-    # Galleria chi-sono ordinata (chisono_1..5) con fallback legacy "chisono"
-    chisono_gallery = [foto[f"chisono_{i}"] for i in range(1, 6) if f"chisono_{i}" in foto]
-    if not chisono_gallery and "chisono" in foto:
-        chisono_gallery = [foto["chisono"]]
+    # Galleria chi-sono: URL ordinati chisono_1..5, fallback legacy "chisono"
+    chisono_gallery = [f"/api/sito/foto/chisono_{i}" for i in range(1, 6) if f"chisono_{i}" in foto_tipi]
+    if not chisono_gallery and "chisono" in foto_tipi:
+        chisono_gallery = ["/api/sito/foto/chisono"]
 
     return {
         "impostazioni": {
@@ -282,18 +286,36 @@ def get_contenuti_sito(db: Session = Depends(get_db)):
             }
             for t in tv
         ],
-        "foto": {**foto, "chisono_gallery": chisono_gallery},
+        "foto": {**foto_urls, "chisono_gallery": chisono_gallery},
     }
 
 
 @router_sito.get("/foto/{tipo}")
-def get_foto(tipo: str, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def serve_foto(tipo: str, db: Session = Depends(get_db)):
+    """Serve l'immagine direttamente come binary (pubblica, no auth).
+    Usata sia dal sito pubblico che dalla gestione interna come <img src=...>.
+    """
     if tipo not in TIPI_FOTO_VALIDI:
         raise HTTPException(status_code=400, detail="Tipo foto non valido")
     foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
-    if not foto:
-        return {"tipo": tipo, "immagine_base64": None}
-    return {"tipo": foto.tipo, "immagine_base64": foto.immagine_base64}
+    if not foto or not foto.immagine_base64:
+        raise HTTPException(status_code=404, detail="Foto non trovata")
+
+    data_url = foto.immagine_base64
+    if "," in data_url:
+        header, b64data = data_url.split(",", 1)
+        # "data:image/jpeg;base64" → "image/jpeg"
+        content_type = header.split(":")[1].split(";")[0] if ":" in header else "image/jpeg"
+    else:
+        b64data = data_url
+        content_type = "image/jpeg"
+
+    img_bytes = base64.b64decode(b64data)
+    return Response(
+        content=img_bytes,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},  # cache 1 giorno
+    )
 
 
 @router_sito.put("/foto/{tipo}")
