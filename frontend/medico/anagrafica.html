@@ -78,6 +78,15 @@
       background: var(--verde-chiaro);
       color: var(--verde-scuro);
     }
+
+    /* ── Stato "salvato" del pulsante Salva ─────────────────────────────────── */
+    #btn-salva.btn-saved {
+      background: #d4edda;
+      color: #155724;
+      border: 1.5px solid #b1dfbb;
+      opacity: 1;          /* sovrascrive la regola .btn:disabled { opacity:.5 } */
+      cursor: default;
+    }
   </style>
 </head>
 <body>
@@ -337,6 +346,18 @@ function renderScheda(p) {
   if (p.cognome === 'Nuovo') { const el = document.getElementById('f-cognome'); el.focus(); el.select(); }
   else if (p.nome === 'Paziente') { const el = document.getElementById('f-nome'); el.focus(); el.select(); }
 
+  // ── Stato pulsante Salva ─────────────────────────────────────────────────
+  function abilitaSalva() {
+    const btn = document.getElementById('btn-salva');
+    if (!btn || !btn.classList.contains('btn-saved')) return; // già abilitato
+    btn.disabled = false;
+    btn.textContent = 'Salva paziente';
+    btn.classList.remove('btn-saved');
+  }
+  // Qualsiasi modifica al form (input/change) riabilita il pulsante
+  document.querySelector('.detail-body')?.addEventListener('input',  abilitaSalva);
+  document.querySelector('.detail-body')?.addEventListener('change', abilitaSalva);
+
   // ── Autocomplete helper generico ────────────────────────────────────────
   function initAutocomplete({ inputEl, listEl, onSelect }) {
     let data = [];
@@ -420,6 +441,7 @@ function renderScheda(p) {
       hiddenNasc.value = c.codice_istat;
       document.getElementById('f-prov-nascita').value = c.sigla_provincia;
       ricalcolaCF();
+      abilitaSalva();
     }
   });
 
@@ -433,6 +455,7 @@ function renderScheda(p) {
       inputRes.value = c.nome;
       document.getElementById('f-prov-res').value = c.sigla_provincia;
       document.getElementById('f-cap').value = c.cap || '';
+      abilitaSalva();
     }
   });
 
@@ -489,7 +512,7 @@ async function controllaDuplicati() {
 
 async function salvaPaziente() {
   const btn = document.getElementById('btn-salva');
-  btn.disabled = true; btn.textContent = 'Salvataggio...';
+  btn.disabled = true; btn.textContent = 'Salvataggio...'; btn.classList.remove('btn-saved');
   const alert = document.getElementById('alert-scheda');
   alert.innerHTML = '';
   const body = {
@@ -536,9 +559,12 @@ async function salvaPaziente() {
     document.getElementById('hdr-nome').textContent = `${updated.cognome} ${updated.nome}`;
     document.getElementById('hdr-cf').textContent = updated.codice_fiscale || '';
     await caricaLista(document.getElementById('search-input').value);
+    // Successo: il pulsante rimane disabilitato con aspetto "salvato"
+    btn.textContent = 'Salvato ✓';
+    btn.classList.add('btn-saved');
   } catch(e) {
     alert.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-  } finally {
+    // Errore: ripristina il pulsante così l'utente può riprovare
     btn.disabled = false; btn.textContent = 'Salva paziente';
   }
 }
