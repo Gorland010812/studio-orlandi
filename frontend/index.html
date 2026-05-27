@@ -302,7 +302,7 @@
       <div class="hero-nome" id="hero-nome">Studio Orlandi</div>
       <div class="hero-titolo" id="hero-titolo">Cardiologia · Medicina dello Sport</div>
       <ul class="hero-prestazioni" id="hero-prestazioni" aria-label="Prestazioni principali"></ul>
-      <a href="/paziente/prenota.html" class="btn-prenota">
+      <a href="https://dxp2800-893f.tail6037e7.ts.net/paziente/prenota.html" class="btn-prenota" id="btn-prenota">
         <span>📅</span> Prenota una visita
       </a>
     </div>
@@ -321,11 +321,7 @@
   <div class="section-inner">
     <h2 class="section-title" id="title-chisono">Chi Sono</h2>
     <div class="chisono-layout" id="chisono-layout">
-      <div class="chisono-bio" id="chisono-bio">
-        <span class="skeleton" style="width:100%;height:1.2rem;display:block;margin-bottom:.5rem"></span>
-        <span class="skeleton" style="width:85%;height:1.2rem;display:block;margin-bottom:.5rem"></span>
-        <span class="skeleton" style="width:92%;height:1.2rem;display:block"></span>
-      </div>
+      <div class="chisono-bio" id="chisono-bio">Medico specializzato in cardiologia e medicina dello sport.</div>
       <div class="chisono-gallery" id="chisono-gallery"></div>
     </div>
   </div>
@@ -336,10 +332,9 @@
   <div class="section-inner">
     <h2 class="section-title" id="title-servizi">Servizi</h2>
     <div class="servizi-grid" id="servizi-grid">
-      <!-- Skeleton cards -->
-      <div class="servizio-card"><div class="skeleton" style="width:100%;height:2.5rem"></div></div>
-      <div class="servizio-card"><div class="skeleton" style="width:100%;height:2.5rem"></div></div>
-      <div class="servizio-card"><div class="skeleton" style="width:100%;height:2.5rem"></div></div>
+      <div class="servizio-card"><div class="servizio-dot" style="background:var(--salvia)"></div><div><div class="servizio-nome">Elettrocardiogramma</div></div></div>
+      <div class="servizio-card"><div class="servizio-dot" style="background:var(--salvia)"></div><div><div class="servizio-nome">Ecocardiogramma</div></div></div>
+      <div class="servizio-card"><div class="servizio-dot" style="background:var(--salvia)"></div><div><div class="servizio-nome">Idoneità sportiva</div></div></div>
     </div>
   </div>
 </section>
@@ -361,13 +356,15 @@
 <footer>
   <span id="footer-nome">Studio Orlandi</span>
   <span id="footer-piva"></span>
-  <a href="/medico/login.html">Accesso medico</a>
+  <a href="https://dxp2800-893f.tail6037e7.ts.net/medico/login.html">Accesso medico</a>
 </footer>
 
 <script>
+const API_BASE = 'https://dxp2800-893f.tail6037e7.ts.net';
+
 (async () => {
   try {
-    const d = await fetch('/api/sito/contenuti').then(r => r.json());
+    const d = await fetch(API_BASE + '/api/sito/contenuti').then(r => r.json());
     const imp  = d.impostazioni || {};
     const foto = d.foto || {};
     const tipiVisita = d.tipi_visita || [];
@@ -496,8 +493,8 @@
     if (imp.piva) document.getElementById('footer-piva').textContent = '· P.IVA ' + imp.piva;
 
   } catch (e) {
-    console.error('Errore caricamento sito:', e);
-    // Fallback: contenuto statico minimale già in pagina
+    // API non raggiungibile: i dati di fallback statici nell'HTML rimangono visibili
+    console.warn('API non raggiungibile (' + API_BASE + '):', e.message || e);
   }
 })();
 </script>
