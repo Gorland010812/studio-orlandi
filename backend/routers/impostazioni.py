@@ -31,6 +31,11 @@ class ImpostazioniUpdate(BaseModel):
 class FotoUpdate(BaseModel):
     immagine_base64: Optional[str] = None
 
+# Tipos foto validi: singole (hero, logo) + galleria chi-sono (chisono_1..5) + legacy
+_TIPI_FOTO_SINGOLA  = {"hero", "logo", "chisono"}          # chisono = legacy compat
+_TIPI_FOTO_CHISONO  = {f"chisono_{i}" for i in range(1, 6)}
+TIPI_FOTO_VALIDI    = _TIPI_FOTO_SINGOLA | _TIPI_FOTO_CHISONO
+
 class SedeCreate(BaseModel):
     nome: str
     indirizzo: Optional[str] = None
@@ -250,6 +255,12 @@ def get_contenuti_sito(db: Session = Depends(get_db)):
     tv = db.query(TipoVisita).filter(TipoVisita.attivo == True).order_by(TipoVisita.ordine, TipoVisita.id).all()
     foto_rows = db.query(FotoSito).all()
     foto = {f.tipo: f.immagine_base64 for f in foto_rows if f.immagine_base64}
+
+    # Galleria chi-sono ordinata (chisono_1..5) con fallback legacy "chisono"
+    chisono_gallery = [foto[f"chisono_{i}"] for i in range(1, 6) if f"chisono_{i}" in foto]
+    if not chisono_gallery and "chisono" in foto:
+        chisono_gallery = [foto["chisono"]]
+
     return {
         "impostazioni": {
             "nome_medico": imp.nome_medico if imp else None,
@@ -271,13 +282,13 @@ def get_contenuti_sito(db: Session = Depends(get_db)):
             }
             for t in tv
         ],
-        "foto": foto,
+        "foto": {**foto, "chisono_gallery": chisono_gallery},
     }
 
 
 @router_sito.get("/foto/{tipo}")
 def get_foto(tipo: str, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    if tipo not in ("hero", "chisono", "logo"):
+    if tipo not in TIPI_FOTO_VALIDI:
         raise HTTPException(status_code=400, detail="Tipo foto non valido")
     foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
     if not foto:
@@ -287,7 +298,7 @@ def get_foto(tipo: str, db: Session = Depends(get_db), _=Depends(get_current_use
 
 @router_sito.put("/foto/{tipo}")
 def update_foto(tipo: str, body: FotoUpdate, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    if tipo not in ("hero", "chisono", "logo"):
+    if tipo not in TIPI_FOTO_VALIDI:
         raise HTTPException(status_code=400, detail="Tipo foto non valido")
     foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
     if foto:
@@ -300,7 +311,7 @@ def update_foto(tipo: str, body: FotoUpdate, db: Session = Depends(get_db), _=De
 
 @router_sito.delete("/foto/{tipo}", status_code=204)
 def delete_foto(tipo: str, db: Session = Depends(get_db), _=Depends(get_current_user)):
-    if tipo not in ("hero", "chisono", "logo"):
+    if tipo not in TIPI_FOTO_VALIDI:
         raise HTTPException(status_code=400, detail="Tipo foto non valido")
     foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
     if foto:

@@ -34,6 +34,13 @@
     .foto-preview { max-width:100%; max-height:200px; border-radius:var(--radius-sm);
                     display:block; margin:0 auto .75rem; object-fit:cover; }
     .foto-preview.hidden { display:none; }
+    /* Galleria chi sono */
+    #chisono-gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:1rem; }
+    #chisono-gallery-grid .foto-upload-area { position:relative; }
+    .chisono-badge { position:absolute; top:.4rem; left:.4rem; background:rgba(0,0,0,.45);
+                     color:#fff; border-radius:50%; width:20px; height:20px; font-size:.65rem;
+                     font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .chisono-add-card { border-style:dashed !important; }
   </style>
 </head>
 <body class="imp-body">
@@ -175,19 +182,13 @@
           </div>
         </div>
 
-        <!-- Chi sono -->
-        <div>
-          <label style="font-weight:600;display:block;margin-bottom:.5rem">Foto Chi Sono</label>
-          <div class="foto-upload-area">
-            <img id="prev-chisono" class="foto-preview hidden" alt="Chi sono">
-            <p id="placeholder-chisono" style="color:#aaa;font-size:.85rem;margin:0">Nessuna immagine</p>
-            <input type="file" id="file-chisono" accept="image/*" class="hidden">
-            <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;flex-wrap:wrap">
-              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-chisono').click()">Scegli</button>
-              <button class="btn btn-primary btn-sm" id="btn-salva-chisono">Salva</button>
-              <button class="btn btn-danger btn-sm" id="btn-elimina-chisono">Rimuovi</button>
-            </div>
+        <!-- Chi sono — galleria multipla (occupa tutta la larghezza) -->
+        <div style="grid-column:1 / -1">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+            <label style="font-weight:600">Foto Chi Sono <span style="font-weight:400;color:#888;font-size:.82rem">(min 1, max 5)</span></label>
+            <button class="btn btn-primary btn-sm" id="btn-aggiungi-chisono">+ Aggiungi foto</button>
           </div>
+          <div id="chisono-gallery-grid"></div>
         </div>
 
         <!-- Logo -->
@@ -545,7 +546,8 @@ async function caricaDatiSito() {
     document.getElementById('sw-telefono').value = imp.numero_telefono || '';
 
     const foto = d.foto || {};
-    ['hero', 'chisono', 'logo'].forEach(tipo => {
+    // Foto singole (hero, logo)
+    ['hero', 'logo'].forEach(tipo => {
       if (foto[tipo]) {
         const prev = document.getElementById(`prev-${tipo}`);
         const placeholder = document.getElementById(`placeholder-${tipo}`);
@@ -554,6 +556,16 @@ async function caricaDatiSito() {
         placeholder.classList.add('hidden');
       }
     });
+    // Galleria chi sono
+    _chisonoSaved = {};
+    for (let i = 1; i <= 5; i++) {
+      if (foto[`chisono_${i}`]) _chisonoSaved[`chisono_${i}`] = foto[`chisono_${i}`];
+    }
+    // Supporto legacy: vecchia chiave "chisono" → chisono_1
+    if (!Object.keys(_chisonoSaved).length && foto.chisono) {
+      _chisonoSaved['chisono_1'] = foto.chisono;
+    }
+    renderChisonoGallery();
   } catch(e) {}
 }
 
@@ -613,8 +625,161 @@ function setupFotoUpload(tipo) {
 }
 
 setupFotoUpload('hero');
-setupFotoUpload('chisono');
 setupFotoUpload('logo');
+
+/* ── Galleria Foto Chi Sono ───────────────────────────────────────────────── */
+let _chisonoSaved = {};    // { 'chisono_1': dataURL, ... }  — stato salvato nel DB
+const MAX_CHISONO = 5;
+
+function renderChisonoGallery() {
+  const grid = document.getElementById('chisono-gallery-grid');
+  grid.innerHTML = '';
+  let count = 0;
+  for (let i = 1; i <= MAX_CHISONO; i++) {
+    if (_chisonoSaved[`chisono_${i}`]) {
+      count++;
+      grid.appendChild(_makeExistingCard(i));
+    }
+  }
+  // Slot "aggiungi" se c'è posto
+  const nextIdx = _nextFreeSlot();
+  if (nextIdx) grid.appendChild(_makeAddCard(nextIdx));
+  // Bottone aggiungi: click = click sul file input del nuovo slot
+  const btnAgg = document.getElementById('btn-aggiungi-chisono');
+  btnAgg.style.display = nextIdx ? '' : 'none';
+  btnAgg.onclick = () => {
+    const fi = document.getElementById('file-chisono-new');
+    if (fi) fi.click();
+  };
+}
+
+function _nextFreeSlot() {
+  for (let i = 1; i <= MAX_CHISONO; i++) {
+    if (!_chisonoSaved[`chisono_${i}`]) return i;
+  }
+  return null;
+}
+
+function _makeExistingCard(idx) {
+  const key = `chisono_${idx}`;
+  const wrap = document.createElement('div');
+  wrap.className = 'foto-upload-area';
+
+  // Badge indice
+  const badge = document.createElement('span');
+  badge.className = 'chisono-badge';
+  badge.textContent = idx;
+
+  const img = document.createElement('img');
+  img.src = _chisonoSaved[key];
+  img.className = 'foto-preview';
+  img.alt = `Foto ${idx}`;
+
+  const fileIn = document.createElement('input');
+  fileIn.type = 'file'; fileIn.accept = 'image/*'; fileIn.className = 'hidden';
+
+  const btns = _btnRow();
+  const btnScegli = _mkBtn('btn-secondary btn-sm', 'Sostituisci', () => fileIn.click());
+  const btnSalva  = _mkBtn('btn-primary btn-sm',   'Salva', null);
+  const btnRimuovi= _mkBtn('btn-danger btn-sm',    'Rimuovi', async () => {
+    if (!confirm('Rimuovere questa foto?')) return;
+    try {
+      await api(`/api/sito/foto/${key}`, { method: 'DELETE' });
+      delete _chisonoSaved[key];
+      renderChisonoGallery();
+      showMsg('Foto rimossa.');
+    } catch(e) { showMsg(e.message, 'error'); }
+  });
+  btnSalva.style.display = 'none';
+
+  let pending = null;
+  fileIn.addEventListener('change', () => {
+    const f = fileIn.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = ev => {
+      pending = ev.target.result;
+      img.src = pending;
+      btnSalva.style.display = '';
+    };
+    rd.readAsDataURL(f);
+  });
+  btnSalva.addEventListener('click', async () => {
+    if (!pending) return;
+    try {
+      await api(`/api/sito/foto/${key}`, { method:'PUT', body:JSON.stringify({ immagine_base64: pending }) });
+      _chisonoSaved[key] = pending;
+      pending = null; fileIn.value = '';
+      btnSalva.style.display = 'none';
+      showMsg('Foto salvata.');
+    } catch(e) { showMsg(e.message, 'error'); }
+  });
+
+  btns.append(btnScegli, btnSalva, btnRimuovi);
+  wrap.append(badge, img, fileIn, btns);
+  return wrap;
+}
+
+function _makeAddCard(idx) {
+  const key = `chisono_${idx}`;
+  const wrap = document.createElement('div');
+  wrap.className = 'foto-upload-area chisono-add-card';
+
+  const ph = document.createElement('p');
+  ph.textContent = '+ Nuova foto';
+  ph.style.cssText = 'color:#bbb;font-size:.88rem;margin:.75rem 0;font-weight:500';
+
+  const img = document.createElement('img');
+  img.className = 'foto-preview hidden';
+
+  const fileIn = document.createElement('input');
+  fileIn.type = 'file'; fileIn.accept = 'image/*';
+  fileIn.className = 'hidden'; fileIn.id = 'file-chisono-new';
+
+  const btns = _btnRow();
+  const btnScegli = _mkBtn('btn-secondary btn-sm', 'Scegli', () => fileIn.click());
+  const btnSalva  = _mkBtn('btn-primary btn-sm',   'Salva', null);
+  btnSalva.style.display = 'none';
+
+  let pending = null;
+  fileIn.addEventListener('change', () => {
+    const f = fileIn.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = ev => {
+      pending = ev.target.result;
+      img.src = pending;
+      img.classList.remove('hidden');
+      ph.classList.add('hidden');
+      btnSalva.style.display = '';
+    };
+    rd.readAsDataURL(f);
+  });
+  btnSalva.addEventListener('click', async () => {
+    if (!pending) { showMsg("Seleziona prima un'immagine", 'error'); return; }
+    try {
+      await api(`/api/sito/foto/${key}`, { method:'PUT', body:JSON.stringify({ immagine_base64: pending }) });
+      _chisonoSaved[key] = pending;
+      pending = null; fileIn.value = '';
+      showMsg('Foto aggiunta.');
+      renderChisonoGallery();
+    } catch(e) { showMsg(e.message, 'error'); }
+  });
+
+  btns.append(btnScegli, btnSalva);
+  wrap.append(ph, img, fileIn, btns);
+  return wrap;
+}
+
+function _btnRow() {
+  const d = document.createElement('div');
+  d.style.cssText = 'display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;flex-wrap:wrap';
+  return d;
+}
+function _mkBtn(cls, text, onClick) {
+  const b = document.createElement('button');
+  b.className = `btn ${cls}`; b.textContent = text;
+  if (onClick) b.addEventListener('click', onClick);
+  return b;
+}
 
 // Init
 (async () => {
