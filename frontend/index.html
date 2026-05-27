@@ -50,11 +50,35 @@
       align-items: center;
     }
 
-    /* Logo ECG */
+    /* Logo ECG — nessuno sfondo, direttamente sul verde salvia */
     .hero-logo { flex-shrink: 0; }
-    .hero-logo svg { width: 90px; height: 90px; drop-shadow: 0 4px 8px rgba(0,0,0,.2); }
-    .hero-logo img { width: 90px; height: 90px; object-fit: contain; border-radius: 50%;
-                     background: rgba(255,255,255,.2); padding: .5rem; }
+    .hero-logo svg { width: 90px; height: 90px; }
+    .hero-logo img { width: 90px; height: 90px; object-fit: contain; }
+
+    /* ── LOADING OVERLAY ─────────────────────────────────────────────────────── */
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--salvia-med);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.25rem;
+      transition: opacity .35s ease;
+    }
+    #loading-overlay.fade-out { opacity: 0; pointer-events: none; }
+    .loading-spinner {
+      width: 52px; height: 52px;
+      border: 5px solid rgba(255,255,255,.3);
+      border-top-color: var(--oro);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    .loading-label {
+      color: rgba(255,255,255,.9);
+      font-size: .95rem;
+      font-weight: 500;
+      letter-spacing: .04em;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Testo centrale */
     .hero-center { color: var(--bianco); }
@@ -280,6 +304,12 @@
 </head>
 <body>
 
+<!-- ── LOADING OVERLAY ───────────────────────────────────────────────────── -->
+<div id="loading-overlay" role="status" aria-live="polite">
+  <div class="loading-spinner"></div>
+  <span class="loading-label">Caricamento…</span>
+</div>
+
 <!-- ── HERO ───────────────────────────────────────────────────────────────── -->
 <section class="hero" id="top" aria-label="Presentazione">
   <div class="hero-inner">
@@ -361,6 +391,13 @@
 
 <script>
 const API_BASE = 'https://dxp2800-893f.tail6037e7.ts.net';
+
+function hideLoader() {
+  const ov = document.getElementById('loading-overlay');
+  if (!ov) return;
+  ov.classList.add('fade-out');
+  setTimeout(() => ov.remove(), 380); // rimuove dal DOM dopo la transizione
+}
 
 (async () => {
   try {
@@ -492,9 +529,12 @@ const API_BASE = 'https://dxp2800-893f.tail6037e7.ts.net';
     if (imp.nome_medico) document.getElementById('footer-nome').textContent = imp.nome_medico;
     if (imp.piva) document.getElementById('footer-piva').textContent = '· P.IVA ' + imp.piva;
 
+    hideLoader();
+
   } catch (e) {
     // API non raggiungibile: i dati di fallback statici nell'HTML rimangono visibili
     console.warn('API non raggiungibile (' + API_BASE + '):', e.message || e);
+    hideLoader();
   }
 })();
 </script>
