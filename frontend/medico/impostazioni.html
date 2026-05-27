@@ -224,7 +224,7 @@
       <div class="form-row">
         <div class="form-group"><label>Durata (minuti)</label><input id="tv-durata" type="number" min="5" step="5" value="30"></div>
         <div class="form-group"><label>Costo (€)</label><input id="tv-costo" type="number" min="0" step="0.01" placeholder="es. 80.00"></div>
-        <div class="form-group"><label>Colore</label><input id="tv-colore" type="color" value="#0F6E56" style="height:42px;padding:.2rem"></div>
+        <div class="form-group"><label>Colore</label><input id="tv-colore" type="color" value="#8FBC8F" style="height:42px;padding:.2rem"></div>
       </div>
       <div class="form-group"><label>Note (visibili al paziente)</label><textarea id="tv-note" rows="2" placeholder="es. Portare referti precedenti"></textarea></div>
       <div class="form-group">
@@ -489,7 +489,7 @@ document.getElementById('btn-nuova-tv').addEventListener('click', () => {
   document.getElementById('tv-durata').value = 30;
   document.getElementById('tv-costo').value  = '';
   document.getElementById('tv-note').value   = '';
-  document.getElementById('tv-colore').value = '#0F6E56';
+  document.getElementById('tv-colore').value = '#8FBC8F';
   document.getElementById('tv-attivo').checked = true;
   openModal('modal-tv');
 });

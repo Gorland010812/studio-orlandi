@@ -278,7 +278,7 @@ function renderCalendario() {
     let html = `<div class="cal-day-num">${g}</div>`;
     appGiorno.slice(0, MAX).forEach(a => {
       const ora = a.data_ora.slice(11,16);
-      html += `<div class="cal-event" style="background:${a.tipo_visita_colore||'#0F6E56'}"
+      html += `<div class="cal-event" style="background:${a.tipo_visita_colore||'#8FBC8F'}"
                data-id="${a.id}" title="${a.nome_display}">${ora} ${a.nome_display}</div>`;
     });
     if (appGiorno.length > MAX) html += `<div class="cal-more">+${appGiorno.length-MAX} altri</div>`;
@@ -677,7 +677,7 @@ function renderLista() {
       appGiorno.forEach(a => {
         const ev = document.createElement('div');
         ev.className = 'cal-list-event';
-        ev.innerHTML = `<div class="cal-list-dot" style="background:${a.tipo_visita_colore||'#0F6E56'}"></div>
+        ev.innerHTML = `<div class="cal-list-dot" style="background:${a.tipo_visita_colore||'#8FBC8F'}"></div>
           <div class="cal-list-info">
             <div style="font-weight:600">${a.nome_display}</div>
             <div class="cal-list-ora">${a.data_ora.slice(11,16)}${a.tipo_visita_nome ? ' · '+a.tipo_visita_nome : ''}</div>
