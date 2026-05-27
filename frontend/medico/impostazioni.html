@@ -29,6 +29,11 @@
     .tv-body { flex:1; }
     .tv-nome { font-weight:600; font-size:.9rem; }
     .tv-det  { font-size:.78rem; color:#888; }
+    .foto-upload-area { border:2px dashed var(--grigio-bordo); border-radius:var(--radius-sm);
+                        padding:1rem; text-align:center; background:#fafafa; }
+    .foto-preview { max-width:100%; max-height:200px; border-radius:var(--radius-sm);
+                    display:block; margin:0 auto .75rem; object-fit:cover; }
+    .foto-preview.hidden { display:none; }
   </style>
 </head>
 <body class="imp-body">
@@ -49,6 +54,7 @@
       <button class="tab-btn" data-tab="tab-contatti">Contatti</button>
       <button class="tab-btn" data-tab="tab-agenda">Agenda</button>
       <button class="tab-btn" data-tab="tab-password">Password</button>
+      <button class="tab-btn" data-tab="tab-sitoweb">Sito Web</button>
     </div>
 
     <!-- ── Tab 1: Intestazione ── -->
@@ -122,6 +128,85 @@
         </div>
       </div>
     </div>
+
+    <!-- ── Tab 5: Sito Web ── -->
+    <div id="tab-sitoweb" class="tab-panel">
+
+      <h3 style="margin-bottom:1rem">Testi del sito pubblico</h3>
+      <div class="form-group">
+        <label>Bio / Curriculum (visibile nella pagina Chi Sono)</label>
+        <textarea id="sw-bio" rows="6" placeholder="Laureato in medicina e chirurgia…"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>P.IVA</label>
+          <input id="sw-piva" placeholder="es. 01234567890">
+        </div>
+        <div class="form-group">
+          <label>Telefono principale</label>
+          <input id="sw-telefono" type="tel" placeholder="es. +39 0573 000000">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Link Google Reviews</label>
+        <input id="sw-reviews" type="url" placeholder="https://g.page/r/…">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btn-salva-sw">Salva testi sito</button>
+      </div>
+
+      <hr style="margin:2rem 0;border:none;border-top:1px solid var(--grigio-bordo)">
+
+      <h3 style="margin-bottom:1.25rem">Foto del sito</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem">
+
+        <!-- Hero -->
+        <div>
+          <label style="font-weight:600;display:block;margin-bottom:.5rem">Immagine Hero (banner)</label>
+          <div class="foto-upload-area">
+            <img id="prev-hero" class="foto-preview hidden" alt="Hero">
+            <p id="placeholder-hero" style="color:#aaa;font-size:.85rem;margin:0">Nessuna immagine</p>
+            <input type="file" id="file-hero" accept="image/*" class="hidden">
+            <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-hero').click()">Scegli</button>
+              <button class="btn btn-primary btn-sm" id="btn-salva-hero">Salva</button>
+              <button class="btn btn-danger btn-sm" id="btn-elimina-hero">Rimuovi</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chi sono -->
+        <div>
+          <label style="font-weight:600;display:block;margin-bottom:.5rem">Foto Chi Sono</label>
+          <div class="foto-upload-area">
+            <img id="prev-chisono" class="foto-preview hidden" alt="Chi sono">
+            <p id="placeholder-chisono" style="color:#aaa;font-size:.85rem;margin:0">Nessuna immagine</p>
+            <input type="file" id="file-chisono" accept="image/*" class="hidden">
+            <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-chisono').click()">Scegli</button>
+              <button class="btn btn-primary btn-sm" id="btn-salva-chisono">Salva</button>
+              <button class="btn btn-danger btn-sm" id="btn-elimina-chisono">Rimuovi</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logo -->
+        <div>
+          <label style="font-weight:600;display:block;margin-bottom:.5rem">Logo studio</label>
+          <div class="foto-upload-area">
+            <img id="prev-logo" class="foto-preview hidden" alt="Logo">
+            <p id="placeholder-logo" style="color:#aaa;font-size:.85rem;margin:0">Nessuna immagine</p>
+            <input type="file" id="file-logo" accept="image/*" class="hidden">
+            <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-logo').click()">Scegli</button>
+              <button class="btn btn-primary btn-sm" id="btn-salva-logo">Salva</button>
+              <button class="btn btn-danger btn-sm" id="btn-elimina-logo">Rimuovi</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- grid foto -->
+    </div><!-- tab-sitoweb -->
 
   </div><!-- .card -->
 </div>
@@ -448,9 +533,92 @@ document.getElementById('btn-cambia-pw').addEventListener('click', async () => {
   } catch(e) { showMsg(e.message, 'error'); }
 });
 
+/* ── Tab 5: Sito Web ──────────────────────────────────────────────────────── */
+
+async function caricaDatiSito() {
+  try {
+    const d = await fetch('/api/sito/contenuti').then(r => r.json());
+    const imp = d.impostazioni || {};
+    document.getElementById('sw-bio').value      = imp.bio_testo || '';
+    document.getElementById('sw-piva').value     = imp.piva || '';
+    document.getElementById('sw-reviews').value  = imp.google_reviews_link || '';
+    document.getElementById('sw-telefono').value = imp.numero_telefono || '';
+
+    const foto = d.foto || {};
+    ['hero', 'chisono', 'logo'].forEach(tipo => {
+      if (foto[tipo]) {
+        const prev = document.getElementById(`prev-${tipo}`);
+        const placeholder = document.getElementById(`placeholder-${tipo}`);
+        prev.src = foto[tipo];
+        prev.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+      }
+    });
+  } catch(e) {}
+}
+
+document.getElementById('btn-salva-sw').addEventListener('click', async () => {
+  try {
+    await api('/api/impostazioni', { method:'PUT', body: JSON.stringify({
+      bio_testo:          document.getElementById('sw-bio').value,
+      piva:               document.getElementById('sw-piva').value || null,
+      google_reviews_link: document.getElementById('sw-reviews').value || null,
+      numero_telefono:    document.getElementById('sw-telefono').value || null,
+    })});
+    showMsg('Dati sito salvati.');
+  } catch(e) { showMsg(e.message, 'error'); }
+});
+
+function setupFotoUpload(tipo) {
+  const fileInput   = document.getElementById(`file-${tipo}`);
+  const preview     = document.getElementById(`prev-${tipo}`);
+  const placeholder = document.getElementById(`placeholder-${tipo}`);
+  let pendingData   = null;
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      pendingData = e.target.result;
+      preview.src = pendingData;
+      preview.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById(`btn-salva-${tipo}`).addEventListener('click', async () => {
+    if (!pendingData) { showMsg('Seleziona prima un\'immagine', 'error'); return; }
+    try {
+      await api(`/api/sito/foto/${tipo}`, { method:'PUT', body: JSON.stringify({ immagine_base64: pendingData }) });
+      pendingData = null;
+      fileInput.value = '';
+      showMsg('Foto salvata.');
+    } catch(e) { showMsg(e.message, 'error'); }
+  });
+
+  document.getElementById(`btn-elimina-${tipo}`).addEventListener('click', async () => {
+    if (!confirm('Rimuovere questa foto?')) return;
+    try {
+      await api(`/api/sito/foto/${tipo}`, { method:'DELETE' });
+      preview.src = '';
+      preview.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+      pendingData = null;
+      fileInput.value = '';
+      showMsg('Foto rimossa.');
+    } catch(e) { showMsg(e.message, 'error'); }
+  });
+}
+
+setupFotoUpload('hero');
+setupFotoUpload('chisono');
+setupFotoUpload('logo');
+
 // Init
 (async () => {
-  await Promise.all([caricaImpostazioni(), caricaSedi(), caricaDisponibilita(), caricaTipiVisita()]);
+  await Promise.all([caricaImpostazioni(), caricaSedi(), caricaDisponibilita(), caricaTipiVisita(), caricaDatiSito()]);
 })();
 </script>
 </body>

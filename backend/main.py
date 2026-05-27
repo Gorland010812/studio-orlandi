@@ -30,6 +30,7 @@ from routers.impostazioni import (
     router_sedi,
     router_tipi_visita,
     router_disponibilita,
+    router_sito,
 )
 from routers.prenotazioni import router as prenotazioni_router, router_comuni
 
@@ -118,6 +119,7 @@ app.include_router(router_tipi_visita)
 app.include_router(router_disponibilita)
 app.include_router(prenotazioni_router)
 app.include_router(router_comuni)
+app.include_router(router_sito)
 
 
 # ── Static Files ──────────────────────────────────────────────────────────────

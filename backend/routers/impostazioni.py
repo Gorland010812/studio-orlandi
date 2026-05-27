@@ -4,14 +4,15 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from database import get_db
-from models import Impostazioni, Sede, TipoVisita, Disponibilita, Appuntamento
+from models import Impostazioni, Sede, TipoVisita, Disponibilita, Appuntamento, FotoSito
 from routers.auth import get_current_user
 
-# Quattro router separati — inclusi singolarmente in main.py
+# Router separati — inclusi singolarmente in main.py
 router_impostazioni = APIRouter(prefix="/api/impostazioni", tags=["impostazioni"])
 router_sedi = APIRouter(prefix="/api/sedi", tags=["sedi"])
 router_tipi_visita = APIRouter(prefix="/api/tipi-visita", tags=["tipi-visita"])
 router_disponibilita = APIRouter(prefix="/api/disponibilita", tags=["disponibilita"])
+router_sito = APIRouter(prefix="/api/sito", tags=["sito"])
 
 
 # ── Schemi ────────────────────────────────────────────────────────────────────
@@ -22,6 +23,13 @@ class ImpostazioniUpdate(BaseModel):
     servizi: Optional[str] = None
     testo_home: Optional[str] = None
     username: Optional[str] = None
+    bio_testo: Optional[str] = None
+    piva: Optional[str] = None
+    google_reviews_link: Optional[str] = None
+    numero_telefono: Optional[str] = None
+
+class FotoUpdate(BaseModel):
+    immagine_base64: Optional[str] = None
 
 class SedeCreate(BaseModel):
     nome: str
@@ -78,6 +86,10 @@ def get_impostazioni(
         "servizi": imp.servizi,
         "testo_home": imp.testo_home,
         "username": imp.username,
+        "bio_testo": imp.bio_testo,
+        "piva": imp.piva,
+        "google_reviews_link": imp.google_reviews_link,
+        "numero_telefono": imp.numero_telefono,
     }
 
 
@@ -227,3 +239,70 @@ def update_disponibilita(body: DisponibilitaUpdate, db: Session = Depends(get_db
             db.add(Disponibilita(**item.model_dump()))
     db.commit()
     return {"message": "Disponibilità aggiornata"}
+
+
+# ── /api/sito ─────────────────────────────────────────────────────────────────
+
+@router_sito.get("/contenuti")
+def get_contenuti_sito(db: Session = Depends(get_db)):
+    imp = db.query(Impostazioni).first()
+    sedi = db.query(Sede).filter(Sede.attiva == True).order_by(Sede.ordine, Sede.id).all()
+    tv = db.query(TipoVisita).filter(TipoVisita.attivo == True).order_by(TipoVisita.ordine, TipoVisita.id).all()
+    foto_rows = db.query(FotoSito).all()
+    foto = {f.tipo: f.immagine_base64 for f in foto_rows if f.immagine_base64}
+    return {
+        "impostazioni": {
+            "nome_medico": imp.nome_medico if imp else None,
+            "specializzazioni": imp.specializzazioni if imp else None,
+            "servizi": imp.servizi if imp else None,
+            "bio_testo": imp.bio_testo if imp else None,
+            "piva": imp.piva if imp else None,
+            "google_reviews_link": imp.google_reviews_link if imp else None,
+            "numero_telefono": imp.numero_telefono if imp else None,
+        } if imp else {},
+        "sedi": [_sede_to_dict(s) for s in sedi],
+        "tipi_visita": [
+            {
+                "nome": t.nome,
+                "durata_minuti": t.durata_minuti,
+                "colore": t.colore,
+                "costo": float(t.costo) if t.costo is not None else None,
+                "note": t.note,
+            }
+            for t in tv
+        ],
+        "foto": foto,
+    }
+
+
+@router_sito.get("/foto/{tipo}")
+def get_foto(tipo: str, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    if tipo not in ("hero", "chisono", "logo"):
+        raise HTTPException(status_code=400, detail="Tipo foto non valido")
+    foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
+    if not foto:
+        return {"tipo": tipo, "immagine_base64": None}
+    return {"tipo": foto.tipo, "immagine_base64": foto.immagine_base64}
+
+
+@router_sito.put("/foto/{tipo}")
+def update_foto(tipo: str, body: FotoUpdate, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    if tipo not in ("hero", "chisono", "logo"):
+        raise HTTPException(status_code=400, detail="Tipo foto non valido")
+    foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
+    if foto:
+        foto.immagine_base64 = body.immagine_base64
+    else:
+        db.add(FotoSito(tipo=tipo, immagine_base64=body.immagine_base64))
+    db.commit()
+    return {"message": "Foto aggiornata"}
+
+
+@router_sito.delete("/foto/{tipo}", status_code=204)
+def delete_foto(tipo: str, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    if tipo not in ("hero", "chisono", "logo"):
+        raise HTTPException(status_code=400, detail="Tipo foto non valido")
+    foto = db.query(FotoSito).filter(FotoSito.tipo == tipo).first()
+    if foto:
+        db.delete(foto)
+        db.commit()

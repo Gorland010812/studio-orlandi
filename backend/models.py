@@ -13,6 +13,10 @@ class Impostazioni(Base):
     testo_home = Column(Text, default="Calendario Appuntamenti: Cardio e idoneità")
     username = Column(Text, nullable=False, default="orlandi")
     password_hash = Column(Text, nullable=False)
+    bio_testo = Column(Text)
+    piva = Column(Text)
+    google_reviews_link = Column(Text)
+    numero_telefono = Column(Text)
     created_at = Column(Timestamp, server_default=func.now())
     updated_at = Column(Timestamp, server_default=func.now(), onupdate=func.now())
 
@@ -112,6 +116,15 @@ class Appuntamento(Base):
             name="ck_appuntamenti_stato"
         ),
     )
+
+
+class FotoSito(Base):
+    __tablename__ = "foto_sito"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tipo = Column(Text, nullable=False, unique=True)  # 'hero', 'chisono', 'logo'
+    immagine_base64 = Column(Text)
+    aggiornato_at = Column(Timestamp, server_default=func.now(), onupdate=func.now())
 
 
 class ComuneItaliano(Base):

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/assets/style.css">
   <style>
     .home-body { min-height:100vh; background:var(--grigio-bg); padding-top:64px; }
-    .home-content { padding:2rem 1.5rem; max-width:960px; margin:0 auto; }
+    .home-content { padding:2rem 1.5rem; max-width:860px; margin:0 auto; }
     .welcome-banner {
       background:linear-gradient(135deg,var(--verde-scuro),var(--verde));
       color:#fff; border-radius:var(--radius); padding:1.5rem 2rem;
@@ -15,17 +15,41 @@
     }
     .welcome-banner h2 { font-size:1.25rem; margin-bottom:.25rem; }
     .welcome-banner p  { font-size:.88rem; opacity:.85; }
-    .modulo-card[data-col="verde"]   { border-top-color: var(--verde); }
-    .modulo-card[data-col="teal"]    { border-top-color: var(--teal); }
-    .modulo-card[data-col="giallo"]  { border-top-color: var(--giallo); }
-    .modulo-card[data-col="rosso"]   { border-top-color: var(--rosso); }
-    .modulo-card[data-col="viola"]   { border-top-color: #8e44ad; }
-    .modulo-card[data-col="arancio"] { border-top-color: #e67e22; }
-    .section-title { font-size:1.05rem; font-weight:600; color:#555; margin-bottom:1rem; text-transform:uppercase; letter-spacing:.05em; font-size:.8rem; }
-    .oggi-strip { background:#fff; border-radius:var(--radius); padding:1rem 1.5rem; margin-bottom:1.5rem;
+    .oggi-strip { background:#fff; border-radius:var(--radius); padding:1rem 1.5rem; margin-bottom:2rem;
                   box-shadow:var(--ombra); display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
     .oggi-label { font-size:.85rem; color:#888; }
     .oggi-count { font-size:1.6rem; font-weight:700; color:var(--verde); }
+
+    .moduli-4 {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:1.25rem;
+    }
+    .modulo-card-lg {
+      background:#fff;
+      border-radius:var(--radius);
+      box-shadow:var(--ombra);
+      border-top:4px solid transparent;
+      padding:2rem 1.5rem;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:.75rem; cursor:pointer; text-decoration:none; color:inherit;
+      transition:transform .15s, box-shadow .15s;
+      min-height:150px;
+      text-align:center;
+    }
+    .modulo-card-lg:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.12); }
+    .modulo-card-lg .m-icon { font-size:2.25rem; line-height:1; }
+    .modulo-card-lg h3 { font-size:1.05rem; font-weight:700; margin:0; }
+    .modulo-card-lg p  { font-size:.8rem; color:#888; margin:0; }
+    .modulo-card-lg[data-col="verde"]  { border-top-color: var(--verde); }
+    .modulo-card-lg[data-col="teal"]   { border-top-color: var(--teal); }
+    .modulo-card-lg[data-col="viola"]  { border-top-color: #8e44ad; }
+    .modulo-card-lg[data-col="grigio"] { border-top-color: #95a5a6; }
+    .modulo-card-lg.placeholder { opacity:.75; }
+
+    @media (max-width:500px) {
+      .moduli-4 { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body class="home-body">
@@ -34,10 +58,6 @@
     <div>
       <h1>Studio Orlandi</h1>
       <div class="subtitle" id="nome-medico-header"></div>
-    </div>
-    <div class="header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="window.location.href='/medico/calendario.html'">📅 Calendario</button>
-      <button class="btn btn-secondary btn-sm" id="btn-logout">Esci</button>
     </div>
   </header>
 
@@ -60,25 +80,28 @@
         <div class="oggi-label">Questo mese</div>
         <div class="oggi-count" id="count-mese">—</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="window.location.href='/medico/calendario.html'">Vedi calendario →</button>
     </div>
 
-    <div class="section-title">Moduli</div>
-    <div class="moduli-grid">
-      <a href="/medico/anagrafica.html" class="modulo-card" data-col="verde">
-        <div class="m-icon">👥</div><h3>Anagrafica</h3>
+    <div class="moduli-4">
+      <a href="/medico/anagrafica.html" class="modulo-card-lg" data-col="verde">
+        <div class="m-icon">👥</div>
+        <h3>Anagrafica</h3>
+        <p>Gestione pazienti</p>
       </a>
-      <a href="/medico/calendario.html" class="modulo-card" data-col="teal">
-        <div class="m-icon">📅</div><h3>Appuntamenti</h3>
+      <a href="/medico/calendario.html" class="modulo-card-lg" data-col="teal">
+        <div class="m-icon">📅</div>
+        <h3>Appuntamenti</h3>
+        <p>Calendario e prenotazioni</p>
       </a>
-      <div class="modulo-card" data-col="rosso" onclick="mostraModuloInArrivo('Cardiologia')">
-        <div class="m-icon">❤️</div><h3>Cardiologia</h3>
+      <div class="modulo-card-lg placeholder" data-col="grigio" onclick="mostraModuloInArrivo()">
+        <div class="m-icon">🧬</div>
+        <h3>dYagnosis</h3>
+        <p>Modulo in arrivo</p>
       </div>
-      <div class="modulo-card" data-col="arancio" onclick="mostraModuloInArrivo('Medicina Sport')">
-        <div class="m-icon">🏃</div><h3>Medicina Sport</h3>
-      </div>
-      <a href="/medico/impostazioni.html" class="modulo-card" data-col="viola">
-        <div class="m-icon">⚙️</div><h3>Impostazioni</h3>
+      <a href="/medico/impostazioni.html" class="modulo-card-lg" data-col="viola">
+        <div class="m-icon">⚙️</div>
+        <h3>Impostazioni</h3>
+        <p>Configurazione studio</p>
       </a>
     </div>
   </div>
@@ -87,17 +110,13 @@
   <script>
     if (!requireAuth()) throw '';
 
-    function mostraModuloInArrivo(nome) {
-      showAlert(`Modulo "${nome}" in arrivo`, 'info', document.getElementById('alert-home'));
+    function mostraModuloInArrivo() {
+      showAlert('Modulo dYagnosis in arrivo', 'info', document.getElementById('alert-home'));
     }
 
     const oggi = new Date();
     document.getElementById('data-oggi').textContent =
       oggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-
-    document.getElementById('btn-logout').addEventListener('click', () => {
-      clearToken(); window.location.href = '/';
-    });
 
     (async () => {
       try {
@@ -106,7 +125,6 @@
         document.getElementById('welcome-name').textContent = me.nome_medico.replace('Dott. ','').replace('Dott.ssa ','');
       } catch(e) {}
 
-      // Contatori
       try {
         const anno = oggi.getFullYear(), mese = oggi.getMonth() + 1;
         const app = await api(`/api/appuntamenti/mese/${anno}/${mese}`);

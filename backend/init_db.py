@@ -7,7 +7,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from database import engine, SessionLocal
-from models import Base, Impostazioni, TipoVisita, Disponibilita, Sede
+from models import Base, Impostazioni, TipoVisita, Disponibilita, Sede, FotoSito
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -57,13 +57,20 @@ def migrate_db():
     """Aggiunge colonne mancanti a tabelle esistenti (idempotente)."""
     from sqlalchemy import text
     with engine.connect() as conn:
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(tipi_visita)"))}
-        if "costo" not in cols:
+        tv_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(tipi_visita)"))}
+        if "costo" not in tv_cols:
             conn.execute(text("ALTER TABLE tipi_visita ADD COLUMN costo REAL"))
             print("Migrazione: aggiunta colonna tipi_visita.costo")
-        if "note" not in cols:
+        if "note" not in tv_cols:
             conn.execute(text("ALTER TABLE tipi_visita ADD COLUMN note TEXT"))
             print("Migrazione: aggiunta colonna tipi_visita.note")
+
+        imp_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(impostazioni)"))}
+        for col in ["bio_testo", "piva", "google_reviews_link", "numero_telefono"]:
+            if col not in imp_cols:
+                conn.execute(text(f"ALTER TABLE impostazioni ADD COLUMN {col} TEXT"))
+                print(f"Migrazione: aggiunta colonna impostazioni.{col}")
+
         conn.commit()
 
 
