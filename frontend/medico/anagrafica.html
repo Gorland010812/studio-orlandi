@@ -42,6 +42,42 @@
       .anag-main { min-height:50vh; }
       .btn-back-mobile { display:inline-flex; margin:.75rem 1rem 0; }
     }
+
+    /* ── Autocomplete custom (sostituisce <datalist> non stilizzabile su iOS) ── */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1.5px solid var(--verde);
+      border-top: none;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      box-shadow: 0 6px 20px rgba(0,0,0,.18);
+      z-index: 3000;
+      max-height: 220px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .autocomplete-list.hidden { display: none; }
+    .autocomplete-item {
+      padding: .55rem .85rem;
+      cursor: pointer;
+      font-size: .92rem;
+      color: #2c3e50;
+      background: #ffffff;
+      border-bottom: 1px solid #f0f2f5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover,
+    .autocomplete-item.ac-focused {
+      background: var(--verde-chiaro);
+      color: var(--verde-scuro);
+    }
   </style>
 </head>
 <body>
@@ -118,8 +154,10 @@
         <div class="form-row">
           <div class="form-group">
             <label>Comune di nascita</label>
-            <input id="f-comune-nascita-cerca" list="list-comuni-nasc" autocomplete="off" placeholder="Digita il comune...">
-            <datalist id="list-comuni-nasc"></datalist>
+            <div class="autocomplete-wrap">
+              <input id="f-comune-nascita-cerca" autocomplete="off" placeholder="Digita il comune...">
+              <div class="autocomplete-list hidden" id="list-comuni-nasc"></div>
+            </div>
             <input id="f-comune-nascita" type="hidden">
           </div>
           <div class="form-group">
@@ -141,8 +179,10 @@
         <h4>Residenza</h4>
         <div class="form-group">
           <label>Comune</label>
-          <input id="f-comune-res" list="list-comuni-res" autocomplete="off" placeholder="Digita il comune...">
-          <datalist id="list-comuni-res"></datalist>
+          <div class="autocomplete-wrap">
+            <input id="f-comune-res" autocomplete="off" placeholder="Digita il comune...">
+            <div class="autocomplete-list hidden" id="list-comuni-res"></div>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -297,60 +337,102 @@ function renderScheda(p) {
   if (p.cognome === 'Nuovo') { const el = document.getElementById('f-cognome'); el.focus(); el.select(); }
   else if (p.nome === 'Paziente') { const el = document.getElementById('f-nome'); el.focus(); el.select(); }
 
-  // Autocomplete comune nascita
-  const inputNasc     = document.getElementById('f-comune-nascita-cerca');
-  const listNasc      = document.getElementById('list-comuni-nasc');
-  const hiddenNasc    = document.getElementById('f-comune-nascita');
-  let _nascData = [];
-  inputNasc.addEventListener('input', async () => {
-    const q = inputNasc.value.trim();
-    if (q.length < 2) return;
-    try {
-      _nascData = await api(`/api/comuni/cerca/${encodeURIComponent(q)}`);
-      listNasc.innerHTML = '';
-      _nascData.forEach(c => {
-        const o = document.createElement('option');
-        o.value = `${c.nome} (${c.sigla_provincia})`;
-        listNasc.appendChild(o);
+  // ── Autocomplete helper generico ────────────────────────────────────────
+  function initAutocomplete({ inputEl, listEl, onSelect }) {
+    let data = [];
+    let focusedIdx = -1;
+
+    function renderList() {
+      listEl.innerHTML = '';
+      focusedIdx = -1;
+      if (!data.length) { listEl.classList.add('hidden'); return; }
+      data.forEach((c, i) => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.textContent = `${c.nome} (${c.sigla_provincia})`;
+        // mousedown invece di click per eseguire prima del blur
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          onSelect(c);
+          listEl.classList.add('hidden');
+          data = [];
+        });
+        // touch support (iOS)
+        item.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          onSelect(c);
+          listEl.classList.add('hidden');
+          data = [];
+          inputEl.blur();
+        }, { passive: false });
+        listEl.appendChild(item);
       });
-    } catch(e) {}
-  });
-  inputNasc.addEventListener('change', () => {
-    const q = inputNasc.value.trim();
-    const match = _nascData.find(c => `${c.nome} (${c.sigla_provincia})` === q || c.nome.toLowerCase() === q.toLowerCase());
-    if (match) {
-      hiddenNasc.value = match.codice_istat;
-      document.getElementById('f-prov-nascita').value = match.sigla_provincia;
+      listEl.classList.remove('hidden');
+    }
+
+    function updateFocus(newIdx) {
+      const items = listEl.querySelectorAll('.autocomplete-item');
+      items.forEach(el => el.classList.remove('ac-focused'));
+      focusedIdx = Math.max(-1, Math.min(newIdx, items.length - 1));
+      if (focusedIdx >= 0) {
+        items[focusedIdx].classList.add('ac-focused');
+        items[focusedIdx].scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    inputEl.addEventListener('input', async () => {
+      const q = inputEl.value.trim();
+      if (q.length < 2) { data = []; listEl.classList.add('hidden'); return; }
+      try {
+        data = await api(`/api/comuni/cerca/${encodeURIComponent(q)}`);
+        renderList();
+      } catch(e) { data = []; listEl.classList.add('hidden'); }
+    });
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (listEl.classList.contains('hidden')) return;
+      const items = listEl.querySelectorAll('.autocomplete-item');
+      if (e.key === 'ArrowDown')  { e.preventDefault(); updateFocus(focusedIdx + 1); }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); updateFocus(focusedIdx - 1); }
+      if (e.key === 'Enter' && focusedIdx >= 0) {
+        e.preventDefault();
+        const c = data[focusedIdx];
+        if (c) { onSelect(c); listEl.classList.add('hidden'); data = []; }
+      }
+      if (e.key === 'Escape') { listEl.classList.add('hidden'); data = []; }
+    });
+
+    inputEl.addEventListener('blur', () => {
+      // Piccolo delay per permettere il click/touch sull'item
+      setTimeout(() => listEl.classList.add('hidden'), 250);
+    });
+  }
+
+  // Autocomplete comune nascita
+  const inputNasc  = document.getElementById('f-comune-nascita-cerca');
+  const listNasc   = document.getElementById('list-comuni-nasc');
+  const hiddenNasc = document.getElementById('f-comune-nascita');
+  initAutocomplete({
+    inputEl: inputNasc,
+    listEl:  listNasc,
+    onSelect: (c) => {
+      inputNasc.value  = `${c.nome} (${c.sigla_provincia})`;
+      hiddenNasc.value = c.codice_istat;
+      document.getElementById('f-prov-nascita').value = c.sigla_provincia;
       ricalcolaCF();
-    } else {
-      hiddenNasc.value = '';
     }
   });
 
   // Autocomplete comune residenza
-  const inputRes  = document.getElementById('f-comune-res');
-  const listRes   = document.getElementById('list-comuni-res');
-  let _resData = [];
-  inputRes.addEventListener('input', async () => {
-    const q = inputRes.value.trim();
-    if (q.length < 2) return;
-    try {
-      _resData = await api(`/api/comuni/cerca/${encodeURIComponent(q)}`);
-      listRes.innerHTML = '';
-      _resData.forEach(c => {
-        const o = document.createElement('option');
-        o.value = `${c.nome} (${c.sigla_provincia})`;
-        listRes.appendChild(o);
-      });
-    } catch(e) {}
-  });
-  inputRes.addEventListener('change', () => {
-    const q = inputRes.value.trim();
-    const match = _resData.find(c => `${c.nome} (${c.sigla_provincia})` === q || c.nome.toLowerCase() === q.toLowerCase());
-    if (match) {
-      inputRes.value = match.nome;
-      document.getElementById('f-prov-res').value = match.sigla_provincia;
-      document.getElementById('f-cap').value = match.cap || '';
+  const inputRes = document.getElementById('f-comune-res');
+  const listRes  = document.getElementById('list-comuni-res');
+  initAutocomplete({
+    inputEl: inputRes,
+    listEl:  listRes,
+    onSelect: (c) => {
+      inputRes.value = c.nome;
+      document.getElementById('f-prov-res').value = c.sigla_provincia;
+      document.getElementById('f-cap').value = c.cap || '';
     }
   });
 
