@@ -135,7 +135,7 @@
     </div>
   </div>
 
-  <div class="detail-body">
+  <div class="detail-body" role="presentation">
     <div id="dup-banner" class="dup-banner hidden"></div>
     <div id="alert-scheda"></div>
 
@@ -145,16 +145,20 @@
       <button class="tab-btn" data-tab="tab-info">Informazioni</button>
     </div>
 
+    <!-- Campi fittizi per impedire al browser di proporre la rubrica -->
+    <input type="text" name="fake-user" style="display:none" autocomplete="username" tabindex="-1" aria-hidden="true">
+    <input type="password" name="fake-pass" style="display:none" autocomplete="new-password" tabindex="-1" aria-hidden="true">
+
     <!-- Tab Anagrafica -->
     <div id="tab-anagrafica" class="tab-panel active">
       <div class="form-section">
         <h4>Dati anagrafici</h4>
         <div class="form-row">
-          <div class="form-group"><label>Cognome *</label><input id="f-cognome" required></div>
-          <div class="form-group"><label>Nome *</label><input id="f-nome" required></div>
+          <div class="form-group"><label>Cognome *</label><input id="f-pax-cognome" required autocomplete="new-password"></div>
+          <div class="form-group"><label>Nome *</label><input id="f-pax-nome" required autocomplete="new-password"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Data di nascita</label><input id="f-data-nascita" type="date"></div>
+          <div class="form-group"><label>Data di nascita</label><input id="f-data-nascita" type="date" autocomplete="new-password"></div>
           <div class="form-group">
             <label>Sesso</label>
             <select id="f-sesso"><option value="">—</option><option value="M">Maschio</option><option value="F">Femmina</option></select>
@@ -171,16 +175,16 @@
           </div>
           <div class="form-group">
             <label>Provincia di nascita</label>
-            <input id="f-prov-nascita" maxlength="2" style="text-transform:uppercase" placeholder="Sigla (auto)">
+            <input id="f-prov-nascita" maxlength="2" style="text-transform:uppercase" placeholder="Sigla (auto)" autocomplete="new-password">
           </div>
         </div>
         <div class="form-group">
           <label>Luogo di nascita (libero)</label>
-          <input id="f-luogo-nascita" placeholder="Usato se comune non in lista">
+          <input id="f-luogo-nascita" placeholder="Usato se comune non in lista" autocomplete="new-password">
         </div>
         <div class="form-group">
           <label>Codice Fiscale</label>
-          <input id="f-cf" style="font-family:monospace;letter-spacing:.05em;text-transform:uppercase" placeholder="Calcolato automaticamente">
+          <input id="f-cf" style="font-family:monospace;letter-spacing:.05em;text-transform:uppercase" placeholder="Calcolato automaticamente" autocomplete="new-password">
         </div>
       </div>
 
@@ -196,11 +200,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Provincia</label>
-            <input id="f-prov-res" maxlength="2" style="text-transform:uppercase" placeholder="Sigla (auto)">
+            <input id="f-prov-res" maxlength="2" style="text-transform:uppercase" placeholder="Sigla (auto)" autocomplete="new-password">
           </div>
-          <div class="form-group"><label>CAP</label><input id="f-cap" maxlength="5"></div>
+          <div class="form-group"><label>CAP</label><input id="f-cap" maxlength="5" autocomplete="new-password"></div>
         </div>
-        <div class="form-group"><label>Indirizzo</label><input id="f-indirizzo"></div>
+        <div class="form-group"><label>Indirizzo</label><input id="f-indirizzo" autocomplete="new-password"></div>
       </div>
     </div>
 
@@ -209,14 +213,14 @@
       <div class="form-section">
         <h4>Recapiti</h4>
         <div class="form-row">
-          <div class="form-group"><label>Telefono</label><input id="f-telefono" type="tel"></div>
-          <div class="form-group"><label>Email</label><input id="f-email" type="email"></div>
+          <div class="form-group"><label>Telefono</label><input id="f-telefono" type="tel" autocomplete="new-password"></div>
+          <div class="form-group"><label>Email</label><input id="f-email" type="email" autocomplete="new-password"></div>
         </div>
       </div>
       <div class="form-section">
         <h4>Medico e riferimenti</h4>
-        <div class="form-group"><label>Medico di base</label><input id="f-medico-base"></div>
-        <div class="form-group"><label>Inviato da</label><input id="f-inviato-da"></div>
+        <div class="form-group"><label>Medico di base</label><input id="f-medico-base" autocomplete="new-password"></div>
+        <div class="form-group"><label>Inviato da</label><input id="f-inviato-da" autocomplete="new-password"></div>
       </div>
       <div class="form-section">
         <h4>Note</h4>
@@ -229,8 +233,8 @@
       <div class="form-section">
         <h4>Dati personali aggiuntivi</h4>
         <div class="form-row">
-          <div class="form-group"><label>Professione</label><input id="f-professione"></div>
-          <div class="form-group"><label>Titolo di studio</label><input id="f-titolo-studio"></div>
+          <div class="form-group"><label>Professione</label><input id="f-professione" autocomplete="new-password"></div>
+          <div class="form-group"><label>Titolo di studio</label><input id="f-titolo-studio" autocomplete="new-password"></div>
         </div>
         <div class="form-group">
           <label>Stato civile</label>
@@ -321,7 +325,7 @@ function renderScheda(p) {
   document.getElementById('hdr-cf').textContent = p.codice_fiscale || '';
 
   const campi = {
-    'f-cognome': p.cognome, 'f-nome': p.nome,
+    'f-pax-cognome': p.cognome, 'f-pax-nome': p.nome,
     'f-data-nascita': normalizzaAnno(p.data_nascita) || '',
     'f-comune-nascita-cerca': p.luogo_nascita || '',
     'f-comune-nascita': p.codice_comune_nascita || '',
@@ -343,8 +347,8 @@ function renderScheda(p) {
   document.getElementById('f-sesso').value = p.sesso || '';
   document.getElementById('f-stato-civile').value = p.stato_civile || '';
 
-  if (p.cognome === 'Nuovo') { const el = document.getElementById('f-cognome'); el.focus(); el.select(); }
-  else if (p.nome === 'Paziente') { const el = document.getElementById('f-nome'); el.focus(); el.select(); }
+  if (p.cognome === 'Nuovo') { const el = document.getElementById('f-pax-cognome'); el.focus(); el.select(); }
+  else if (p.nome === 'Paziente') { const el = document.getElementById('f-pax-nome'); el.focus(); el.select(); }
 
   // ── Stato pulsante Salva ─────────────────────────────────────────────────
   function abilitaSalva() {
@@ -460,12 +464,12 @@ function renderScheda(p) {
   });
 
   // CF auto
-  ['f-cognome','f-nome','f-data-nascita','f-sesso'].forEach(id => {
+  ['f-pax-cognome','f-pax-nome','f-data-nascita','f-sesso'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', ricalcolaCF);
   });
 
   // Duplicati
-  ['f-cognome','f-nome'].forEach(id => {
+  ['f-pax-cognome','f-pax-nome'].forEach(id => {
     document.getElementById(id)?.addEventListener('blur', controllaDuplicati);
   });
 
@@ -484,8 +488,8 @@ function renderScheda(p) {
 }
 
 function ricalcolaCF() {
-  const cognome = document.getElementById('f-cognome')?.value;
-  const nome    = document.getElementById('f-nome')?.value;
+  const cognome = document.getElementById('f-pax-cognome')?.value;
+  const nome    = document.getElementById('f-pax-nome')?.value;
   const dn      = document.getElementById('f-data-nascita')?.value;
   const sesso   = document.getElementById('f-sesso')?.value;
   const codice  = document.getElementById('f-comune-nascita')?.value;
@@ -516,8 +520,8 @@ async function salvaPaziente() {
   const alert = document.getElementById('alert-scheda');
   alert.innerHTML = '';
   const body = {
-    cognome:             document.getElementById('f-cognome').value.trim(),
-    nome:                document.getElementById('f-nome').value.trim(),
+    cognome:             document.getElementById('f-pax-cognome').value.trim(),
+    nome:                document.getElementById('f-pax-nome').value.trim(),
     data_nascita:        normalizzaAnno(document.getElementById('f-data-nascita').value) || null,
     sesso:               document.getElementById('f-sesso').value || null,
     codice_comune_nascita: document.getElementById('f-comune-nascita').value || null,
