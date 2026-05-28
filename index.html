@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Studio Orlandi — Cardiologia</title>
   <style>
+    /* ── Reset & Variabili ─────────────────────────────────────────────────── */
     :root {
-      --salvia:       #8FBC8F;
+      --salvia:       #7FA882;
       --salvia-med:   #6B9E6B;
       --salvia-scuro: #3D6B3D;
       --salvia-chiaro:#EAF4EA;
@@ -27,6 +28,7 @@
            color: var(--testo); background: var(--grigio-bg); line-height: 1.6; }
     a { color: inherit; text-decoration: none; }
 
+    /* ── HERO ───────────────────────────────────────────────────────────────── */
     .hero {
       background: linear-gradient(135deg, var(--salvia-med) 0%, var(--salvia) 55%, #A8D0A8 100%);
       padding: 3rem 2rem 3.5rem;
@@ -47,10 +49,13 @@
       gap: 2.5rem;
       align-items: center;
     }
+
+    /* Logo ECG — nessuno sfondo, direttamente sul verde salvia */
     .hero-logo { flex-shrink: 0; }
     .hero-logo svg { width: 90px; height: 90px; }
     .hero-logo img { width: 90px; height: 90px; object-fit: contain; }
 
+    /* ── LOADING OVERLAY ─────────────────────────────────────────────────────── */
     #loading-overlay {
       position: fixed; inset: 0; z-index: 9999;
       background: var(--salvia-med);
@@ -75,6 +80,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Testo centrale */
     .hero-center { color: var(--bianco); }
     .hero-nome {
       font-size: clamp(1.6rem, 3vw, 2.4rem);
@@ -89,47 +95,77 @@
       margin-bottom: 1.6rem;
       font-weight: 400;
     }
-    .hero-prestazioni { list-style: none; margin-bottom: 2rem; }
+    .hero-prestazioni {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
     .hero-prestazioni li {
-      display: flex; align-items: center; gap: .6rem;
-      padding: .3rem 0; font-size: .98rem; font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .3rem 0;
+      font-size: .98rem;
+      font-weight: 500;
     }
     .hero-prestazioni li::before {
-      content: ''; width: 8px; height: 8px;
-      background: var(--oro); border-radius: 50%; flex-shrink: 0;
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--oro);
+      border-radius: 50%;
+      flex-shrink: 0;
     }
     .btn-prenota {
-      display: inline-flex; align-items: center; gap: .55rem;
-      background: #D4A843; color: var(--bianco);
-      padding: .85rem 2.2rem; border-radius: 8px;
-      font-size: 1rem; font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      background: #D4A843;
+      color: var(--bianco);
+      padding: .85rem 2.2rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 700;
       box-shadow: 3px 5px 0 #7a6116;
       transition: background .2s, transform .2s, box-shadow .2s;
       white-space: nowrap;
     }
-    .btn-prenota:hover { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
-    .btn-prenota:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 #7a6116; }
+    .btn-prenota:hover {
+      background: #b8911f;
+      transform: translateY(-2px);
+      box-shadow: 3px 7px 0 #7a6116;
+    }
+    .btn-prenota:active {
+      transform: translateY(2px);
+      box-shadow: 1px 3px 0 #7a6116;
+    }
 
+    /* Foto dottore */
     .hero-foto-wrap { flex-shrink: 0; }
     .hero-foto {
-      width: 200px; height: 270px;
-      object-fit: cover; object-position: top center;
+      width: 200px;
+      height: 270px;
+      object-fit: cover;
+      object-position: top center;
       border-radius: var(--radius);
       box-shadow: 0 8px 36px rgba(0,0,0,.28);
       display: block;
     }
     .hero-foto-empty {
-      width: 200px; height: 270px; border-radius: var(--radius);
+      width: 200px; height: 270px;
+      border-radius: var(--radius);
       background: rgba(255,255,255,.15);
       display: flex; align-items: center; justify-content: center;
-      font-size: 4rem; border: 2px dashed rgba(255,255,255,.35);
+      font-size: 4rem;
+      border: 2px dashed rgba(255,255,255,.35);
     }
 
+    /* ── SEZIONI COMUNI ─────────────────────────────────────────────────────── */
     section { padding: 4.5rem 2rem; }
     .section-inner { max-width: 1080px; margin: 0 auto; }
     .section-title {
       font-size: clamp(1.4rem, 2.5vw, 1.9rem);
-      font-weight: 700; text-align: center; margin-bottom: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 2.5rem;
       color: var(--salvia-scuro);
       display: flex; align-items: center; justify-content: center; gap: 1rem;
     }
@@ -138,24 +174,51 @@
       background: linear-gradient(90deg, transparent, var(--salvia), transparent);
     }
 
+    /* ── CHI SONO ───────────────────────────────────────────────────────────── */
     .chi-sono { background: var(--bianco); }
-    .chisono-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
-    .chisono-bio { font-size: .98rem; line-height: 1.85; color: var(--testo-light); white-space: pre-wrap; }
-    .chisono-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; }
+    .chisono-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+    .chisono-bio {
+      font-size: .98rem;
+      line-height: 1.85;
+      color: var(--testo-light);
+      white-space: pre-wrap;
+    }
+    .chisono-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .75rem;
+    }
     .chisono-gallery img {
-      width: 100%; aspect-ratio: 3/4; object-fit: cover;
-      border-radius: var(--radius-sm); box-shadow: var(--ombra); transition: transform .2s;
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--ombra);
+      transition: transform .2s;
     }
     .chisono-gallery img:hover { transform: scale(1.03); }
 
+    /* ── SERVIZI ─────────────────────────────────────────────────────────────── */
     .servizi { background: var(--salvia-chiaro); }
-    .servizi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+    .servizi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
     .servizio-card {
-      background: var(--bianco); border-radius: var(--radius);
+      background: var(--bianco);
+      border-radius: var(--radius);
       padding: 1.5rem 1.5rem 1.5rem 1.25rem;
       box-shadow: 4px 6px 0 rgba(74,122,74,0.35);
       border-left: 5px solid var(--salvia);
-      display: flex; align-items: flex-start; gap: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
       transition: box-shadow .18s, transform .18s;
     }
     .servizio-card:hover { box-shadow: 4px 8px 0 rgba(74,122,74,0.35); transform: translateY(-3px); }
@@ -163,6 +226,7 @@
     .servizio-nome { font-weight: 600; font-size: .98rem; margin-bottom: .2rem; color: var(--testo); }
     .servizio-det { font-size: .83rem; color: #777; line-height: 1.5; }
 
+    /* ── CONTATTI ────────────────────────────────────────────────────────────── */
     .contatti {
       background: linear-gradient(135deg, var(--salvia-scuro) 0%, var(--salvia-med) 100%);
       color: var(--bianco);
@@ -170,33 +234,66 @@
     .contatti .section-title { color: var(--bianco); }
     .contatti .section-title::before,
     .contatti .section-title::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); }
-    .contatti-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .contatti-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
     .contatto-card {
-      background: rgba(255,255,255,.14); backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,.22); border-radius: var(--radius); padding: 1.5rem;
+      background: rgba(255,255,255,.14);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: var(--radius);
+      padding: 1.5rem;
     }
     .contatto-card h3 { font-size: 1.05rem; margin-bottom: .75rem; font-weight: 600; }
     .contatto-card p { font-size: .92rem; opacity: .88; line-height: 1.75; }
     .contatto-card a { color: var(--bianco); }
-    .reviews-wrap { text-align: center; padding-top: 1rem; }
+    .reviews-wrap {
+      text-align: center;
+      padding-top: 1rem;
+    }
     .reviews-link {
-      display: inline-flex; align-items: center; gap: .5rem;
-      background: #D4A843; color: #fff; border: none; border-radius: 8px;
-      padding: .65rem 1.5rem; font-size: .92rem; font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: #D4A843;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: .65rem 1.5rem;
+      font-size: .92rem;
+      font-weight: 500;
       box-shadow: 3px 5px 0 #7a6116;
       transition: background .18s, transform .18s, box-shadow .18s;
     }
-    .reviews-link:hover { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
-    .reviews-link:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 #7a6116; }
+    .reviews-link:hover  { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
+    .reviews-link:active { transform: translateY(2px); box-shadow: 1px 3px 0 #7a6116; }
 
+    /* ── FOOTER ──────────────────────────────────────────────────────────────── */
     footer {
-      background: var(--salvia-scuro); color: rgba(255,255,255,.55);
-      text-align: center; padding: 1.4rem 1rem; font-size: .8rem;
+      background: var(--salvia-scuro);
+      color: rgba(255,255,255,.55);
+      text-align: center;
+      padding: 1.4rem 1rem;
+      font-size: .8rem;
     }
     footer a { color: rgba(255,255,255,.35); margin-left: .75rem; }
 
+    /* ── LOADING SKELETON ────────────────────────────────────────────────────── */
+    .skeleton { background: linear-gradient(90deg, #e0ece0 25%, #cce3cc 50%, #e0ece0 75%);
+                background-size: 200% 100%; animation: shimmer 1.4s infinite;
+                border-radius: 4px; display: inline-block; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
-      .hero-inner { grid-template-columns: 1fr; text-align: center; gap: 1.5rem; }
+      .hero-inner {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1.5rem;
+      }
       .hero-logo { display: none; }
       .hero-foto-wrap { order: -1; display: flex; justify-content: center; }
       .hero-foto, .hero-foto-empty { width: 160px; height: 210px; }
@@ -204,6 +301,7 @@
       .chisono-layout { grid-template-columns: 1fr; }
       .section-title::before, .section-title::after { display: none; }
     }
+
     @media (max-width: 480px) {
       section { padding: 3rem 1.25rem; }
       .hero { padding: 2.5rem 1.25rem 3rem; }
@@ -213,36 +311,57 @@
 </head>
 <body>
 
+<!-- ── LOADING OVERLAY ───────────────────────────────────────────────────── -->
 <div id="loading-overlay" role="status" aria-live="polite">
   <div class="loading-spinner"></div>
   <span class="loading-label">Caricamento…</span>
 </div>
 
+<!-- ── HERO ───────────────────────────────────────────────────────────────── -->
 <section class="hero" id="top" aria-label="Presentazione">
   <div class="hero-inner">
+
+    <!-- Logo / ECG SVG -->
     <div class="hero-logo" id="hero-logo-wrap">
       <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Cuore -->
         <path d="M50 82 C20 62 4 46 4 28.5 C4 14.5 15 5 27 5 C35.5 5 43.5 9.5 50 19 C56.5 9.5 64.5 5 73 5 C85 5 96 14.5 96 28.5 C96 46 80 62 50 82Z"
               fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.7)" stroke-width="1.8"/>
+        <!-- Tracciato ECG -->
         <polyline points="12,50 22,50 27,36 32,64 37,40 42,55 50,55 54,48 62,48 66,55 75,55 80,50 90,50"
-                  stroke="white" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                  stroke="white" stroke-width="2.8" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
+
+    <!-- Testo -->
     <div class="hero-center">
       <div class="hero-nome" id="hero-nome">Studio Orlandi</div>
       <div class="hero-titolo" id="hero-titolo">Cardiologia · Medicina dello Sport</div>
       <ul class="hero-prestazioni" id="hero-prestazioni" aria-label="Prestazioni principali"></ul>
       <a href="https://dxp2800-893f.tail6037e7.ts.net/paziente/prenota.html" class="btn-prenota" id="btn-prenota">
-        <span>📅</span> Prenota una visita
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Prenota una visita
       </a>
     </div>
+
+    <!-- Foto medico -->
     <div class="hero-foto-wrap">
       <img id="hero-foto-img" class="hero-foto" style="display:none" alt="Foto medico">
       <div id="hero-foto-empty" class="hero-foto-empty" aria-hidden="true">👨‍⚕️</div>
     </div>
+
   </div>
 </section>
 
+<!-- ── CHI SONO ────────────────────────────────────────────────────────────── -->
 <section class="chi-sono" id="chisono" aria-labelledby="title-chisono">
   <div class="section-inner">
     <h2 class="section-title" id="title-chisono">Chi Sono</h2>
@@ -253,6 +372,7 @@
   </div>
 </section>
 
+<!-- ── SERVIZI ─────────────────────────────────────────────────────────────── -->
 <section class="servizi" id="servizi" aria-labelledby="title-servizi">
   <div class="section-inner">
     <h2 class="section-title" id="title-servizi">Servizi</h2>
@@ -264,6 +384,7 @@
   </div>
 </section>
 
+<!-- ── CONTATTI ────────────────────────────────────────────────────────────── -->
 <section class="contatti" id="contatti" aria-labelledby="title-contatti">
   <div class="section-inner">
     <h2 class="section-title" id="title-contatti">Contatti</h2>
@@ -276,6 +397,7 @@
   </div>
 </section>
 
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
 <footer>
   <span id="footer-nome">Studio Orlandi</span>
   <span id="footer-piva"></span>
@@ -284,43 +406,52 @@
 
 <script>
 const API_BASE = 'https://dxp2800-893f.tail6037e7.ts.net';
+
+/** Converte un percorso relativo /api/... nell'URL assoluto del NAS.
+ *  Se il valore è già un data: URL (base64 legacy) lo usa com'è. */
 const fotoUrl = (s) => s && s.startsWith('data:') ? s : s ? API_BASE + s : null;
 
 function hideLoader() {
   const ov = document.getElementById('loading-overlay');
   if (!ov) return;
   ov.classList.add('fade-out');
-  setTimeout(() => ov.remove(), 380);
+  setTimeout(() => ov.remove(), 380); // rimuove dal DOM dopo la transizione
 }
 
 (async () => {
   try {
     const d = await fetch(API_BASE + '/api/sito/contenuti').then(r => r.json());
-    const imp = d.impostazioni || {};
+    const imp  = d.impostazioni || {};
     const foto = d.foto || {};
     const tipiVisita = d.tipi_visita || [];
     const sedi = d.sedi || [];
 
+    /* ── Hero: nome e titolo ── */
     if (imp.nome_medico) {
       document.getElementById('hero-nome').textContent = imp.nome_medico;
       document.title = imp.nome_medico + ' — Cardiologia';
     }
     if (imp.specializzazioni) {
       const lines = imp.specializzazioni.split('\n')
-        .map(s => s.replace(/^[-–—·•]\s*/, '').trim()).filter(Boolean);
+        .map(s => s.replace(/^[-–—·•]\s*/, '').trim())
+        .filter(Boolean);
       if (lines.length) document.getElementById('hero-titolo').textContent = lines.slice(0, 3).join(' · ');
     }
 
+    /* ── Hero: elenco prestazioni (prime 3) ── */
     const presEl = document.getElementById('hero-prestazioni');
     const serviziLines = (imp.servizi || '')
       .split('\n').map(s => s.replace(/^[-–—·•]\s*/, '').trim()).filter(Boolean);
-    const heroItems = serviziLines.length ? serviziLines.slice(0, 3) : tipiVisita.slice(0, 3).map(t => t.nome);
+    const heroItems = serviziLines.length
+      ? serviziLines.slice(0, 3)
+      : tipiVisita.slice(0, 3).map(t => t.nome);
     heroItems.forEach(txt => {
       const li = document.createElement('li');
       li.textContent = txt;
       presEl.appendChild(li);
     });
 
+    /* ── Hero: foto medico ── */
     if (foto.hero) {
       const img = document.getElementById('hero-foto-img');
       img.src = fotoUrl(foto.hero);
@@ -328,14 +459,17 @@ function hideLoader() {
       document.getElementById('hero-foto-empty').style.display = 'none';
     }
 
+    /* ── Hero: logo personalizzato ── */
     if (foto.logo) {
       document.getElementById('hero-logo-wrap').innerHTML =
         `<img src="${fotoUrl(foto.logo)}" alt="Logo studio">`;
     }
 
+    /* ── Chi sono: bio ── */
     const bioEl = document.getElementById('chisono-bio');
     bioEl.textContent = imp.bio_testo || 'Testo del curriculum non ancora configurato.';
 
+    /* ── Chi sono: galleria foto ── */
     const gallery = document.getElementById('chisono-gallery');
     const chisonoFotos = (foto.chisono_gallery || []).filter(Boolean);
     if (chisonoFotos.length) {
@@ -351,6 +485,7 @@ function hideLoader() {
       document.getElementById('chisono-layout').style.gridTemplateColumns = '1fr';
     }
 
+    /* ── Servizi ── */
     const sgrid = document.getElementById('servizi-grid');
     sgrid.innerHTML = '';
     if (tipiVisita.length) {
@@ -361,7 +496,10 @@ function hideLoader() {
         if (tv.costo != null) det += ' &nbsp;·&nbsp; €' + tv.costo.toFixed(2);
         if (tv.note) det += '<br>' + tv.note;
         card.innerHTML = `<div class="servizio-dot" style="background:${tv.colore}"></div>
-          <div><div class="servizio-nome">${tv.nome}</div><div class="servizio-det">${det}</div></div>`;
+          <div>
+            <div class="servizio-nome">${tv.nome}</div>
+            <div class="servizio-det">${det}</div>
+          </div>`;
         sgrid.appendChild(card);
       });
     } else if (serviziLines.length) {
@@ -374,42 +512,51 @@ function hideLoader() {
       });
     }
 
+    /* ── Contatti: sedi ── */
     const cgrid = document.getElementById('contatti-grid');
     sedi.forEach(s => {
       const card = document.createElement('div');
       card.className = 'contatto-card';
       let body = '<p>';
       if (s.indirizzo) body += s.indirizzo + '<br>';
-      const localita = [s.cap, s.citta].filter(Boolean).join(' ') + (s.provincia ? ` (${s.provincia})` : '');
+      const localita = [s.cap, s.citta].filter(Boolean).join(' ')
+        + (s.provincia ? ` (${s.provincia})` : '');
       if (localita.trim()) body += localita + '<br>';
       if (s.telefono) body += `📞 <a href="tel:${s.telefono}">${s.telefono}</a><br>`;
-      if (s.email) body += `✉️ <a href="mailto:${s.email}">${s.email}</a>`;
+      if (s.email)    body += `✉️ <a href="mailto:${s.email}">${s.email}</a>`;
       body += '</p>';
       card.innerHTML = `<h3>🏥 ${s.nome}</h3>${body}`;
       cgrid.appendChild(card);
     });
 
+    /* ── Contatti: telefono principale (se non già in sedi) ── */
     if (imp.numero_telefono && !sedi.some(s => s.telefono === imp.numero_telefono)) {
       const card = document.createElement('div');
       card.className = 'contatto-card';
-      card.innerHTML = `<h3>📞 Telefono</h3><p><a href="tel:${imp.numero_telefono}">${imp.numero_telefono}</a></p>`;
+      card.innerHTML = `<h3>📞 Telefono</h3>
+        <p><a href="tel:${imp.numero_telefono}">${imp.numero_telefono}</a></p>`;
       cgrid.appendChild(card);
     }
 
+    /* ── Google Reviews ── */
     if (imp.google_reviews_link) {
       document.getElementById('reviews-link').href = imp.google_reviews_link;
       document.getElementById('reviews-wrap').style.display = 'block';
     }
 
+    /* ── Footer ── */
     if (imp.nome_medico) document.getElementById('footer-nome').textContent = imp.nome_medico;
     if (imp.piva) document.getElementById('footer-piva').textContent = '· P.IVA ' + imp.piva;
 
     hideLoader();
+
   } catch (e) {
+    // API non raggiungibile: i dati di fallback statici nell'HTML rimangono visibili
     console.warn('API non raggiungibile (' + API_BASE + '):', e.message || e);
     hideLoader();
   }
 })();
 </script>
+
 </body>
 </html>
