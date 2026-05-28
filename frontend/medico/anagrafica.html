@@ -535,6 +535,17 @@ function renderScheda(p) {
     setTimeout(() => listCognome.classList.add('hidden'), 250);
   });
 
+  // Capitalizzazione automatica Nome e Cognome
+  ['f-pax-cognome','f-pax-nome'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const start = el.selectionStart, end = el.selectionEnd;
+      const nuovo = el.value.replace(/(^|\s)(\S)/g, (_, sp, c) => sp + c.toUpperCase());
+      if (nuovo !== el.value) { el.value = nuovo; el.setSelectionRange(start, end); }
+    });
+  });
+
   // CF auto
   ['f-pax-cognome','f-pax-nome','f-data-nascita','f-sesso'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', ricalcolaCF);
