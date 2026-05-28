@@ -29,7 +29,7 @@
     .paziente-field-wrap input { flex:1; }
     /* Mobile list view */
     .cal-list { display:flex; flex-direction:column; gap:.5rem; }
-    .cal-list-day { background:#fff; border-radius:var(--radius-sm); border:1px solid var(--grigio-bordo); overflow:hidden; }
+    .cal-list-day { background:#fff; border-radius:var(--radius-sm); border:1px solid var(--grigio-bordo); overflow:hidden; box-shadow:4px 6px 0 rgba(74,122,74,.35); }
     .cal-list-day-hdr { display:flex; align-items:center; justify-content:space-between; padding:.6rem 1rem;
                         background:var(--verde-chiaro); cursor:pointer; }
     .cal-list-day-nome { font-weight:600; font-size:.9rem; color:var(--verde-scuro); text-transform:capitalize; }
@@ -278,7 +278,7 @@ function renderCalendario() {
     let html = `<div class="cal-day-num">${g}</div>`;
     appGiorno.slice(0, MAX).forEach(a => {
       const ora = a.data_ora.slice(11,16);
-      html += `<div class="cal-event" style="background:${a.tipo_visita_colore||'#8FBC8F'}"
+      html += `<div class="cal-event" style="background:${a.tipo_visita_colore||'#6a9e6a'}"
                data-id="${a.id}" title="${a.nome_display}">${ora} ${a.nome_display}</div>`;
     });
     if (appGiorno.length > MAX) html += `<div class="cal-more">+${appGiorno.length-MAX} altri</div>`;
@@ -677,7 +677,7 @@ function renderLista() {
       appGiorno.forEach(a => {
         const ev = document.createElement('div');
         ev.className = 'cal-list-event';
-        ev.innerHTML = `<div class="cal-list-dot" style="background:${a.tipo_visita_colore||'#8FBC8F'}"></div>
+        ev.innerHTML = `<div class="cal-list-dot" style="background:${a.tipo_visita_colore||'#6a9e6a'}"></div>
           <div class="cal-list-info">
             <div style="font-weight:600">${a.nome_display}</div>
             <div class="cal-list-ora">${a.data_ora.slice(11,16)}${a.tipo_visita_nome ? ' · '+a.tipo_visita_nome : ''}</div>

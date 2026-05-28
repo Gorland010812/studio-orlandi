@@ -16,7 +16,7 @@
     .welcome-banner h2 { font-size:1.25rem; margin-bottom:.25rem; }
     .welcome-banner p  { font-size:.88rem; opacity:.85; }
     .oggi-strip { background:#fff; border-radius:var(--radius); padding:1rem 1.5rem; margin-bottom:2rem;
-                  box-shadow:var(--ombra); display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+                  box-shadow:4px 6px 0 rgba(74,122,74,.35); display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
     .oggi-label { font-size:.85rem; color:#888; }
     .oggi-count { font-size:1.6rem; font-weight:700; color:var(--verde); }
 
@@ -28,7 +28,7 @@
     .modulo-card-lg {
       background:#fff;
       border-radius:var(--radius);
-      box-shadow:var(--ombra);
+      box-shadow:4px 6px 0 rgba(74,122,74,.35);
       border-top:4px solid transparent;
       padding:2rem 1.5rem;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -37,7 +37,8 @@
       min-height:150px;
       text-align:center;
     }
-    .modulo-card-lg:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.12); }
+    .modulo-card-lg:hover  { transform:translateY(-2px); box-shadow:4px 8px 0 rgba(74,122,74,.35); }
+    .modulo-card-lg:active { transform:translateY(3px) translateX(2px); box-shadow:1px 1px 0 rgba(74,122,74,.35); }
     .modulo-card-lg .m-icon { font-size:2.25rem; line-height:1; }
     .modulo-card-lg h3 { font-size:1.05rem; font-weight:700; margin:0; }
     .modulo-card-lg p  { font-size:.8rem; color:#888; margin:0; }
