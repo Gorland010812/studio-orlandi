@@ -25,15 +25,18 @@
     .ph-mid p  { font-size: .72rem; opacity: .85; margin: 0;
                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ph-btn {
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.35);
-      color: #fff; border-radius: var(--radius-sm);
+      background: #D4A843;
+      border: none;
+      color: #fff; border-radius: 8px;
       padding: .45rem .8rem; font-size: .82rem;
       cursor: pointer; white-space: nowrap; flex-shrink: 0;
-      font-family: inherit; transition: background .12s;
+      font-family: inherit; font-weight: 600;
+      box-shadow: 3px 5px 0 #7a6116;
+      transition: background .12s, transform .12s, box-shadow .12s;
     }
-    .ph-btn:active { background: rgba(255,255,255,.3); }
-    .ph-btn:disabled { opacity: .35; cursor: default; }
+    .ph-btn:hover  { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
+    .ph-btn:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 #7a6116; }
+    .ph-btn:disabled { opacity: .35; cursor: default; box-shadow: none; transform: none; }
     .ph-btn.ph-hidden { visibility: hidden; pointer-events: none; }
 
     /* ── Corpo ────────────────────────────────────────────────────────────── */

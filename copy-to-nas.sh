@@ -9,5 +9,6 @@ cp "$SRC/medico/anagrafica.html"        "$NAS/medico/anagrafica.html"
 cp "$SRC/medico/calendario.html"        "$NAS/medico/calendario.html"
 cp "$SRC/medico/impostazioni.html"      "$NAS/medico/impostazioni.html"
 cp "$SRC/medico/login.html"             "$NAS/medico/login.html"
+cp "$SRC/paziente/prenota.html"         "$NAS/paziente/prenota.html"
 
 echo "✓ Tutti i file frontend copiati sul NAS"

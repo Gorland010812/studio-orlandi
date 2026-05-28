@@ -118,20 +118,20 @@
       display: inline-flex;
       align-items: center;
       gap: .55rem;
-      background: var(--oro);
+      background: #D4A843;
       color: var(--bianco);
       padding: .85rem 2.2rem;
       border-radius: 8px;
       font-size: 1rem;
       font-weight: 700;
-      box-shadow: 4px 6px 0 #7a6116;
+      box-shadow: 3px 5px 0 #7a6116;
       transition: background .2s, transform .2s, box-shadow .2s;
       white-space: nowrap;
     }
     .btn-prenota:hover {
-      background: var(--oro-scuro);
+      background: #b8911f;
       transform: translateY(-2px);
-      box-shadow: 4px 8px 0 #7a6116;
+      box-shadow: 3px 7px 0 #7a6116;
     }
     .btn-prenota:active {
       transform: translateY(3px) translateX(2px);
@@ -214,14 +214,14 @@
       background: var(--bianco);
       border-radius: var(--radius);
       padding: 1.5rem 1.5rem 1.5rem 1.25rem;
-      box-shadow: 4px 6px 0 rgba(90,138,90,0.4);
+      box-shadow: 4px 6px 0 rgba(74,122,74,0.35);
       border-left: 5px solid var(--salvia);
       display: flex;
       align-items: flex-start;
       gap: 1rem;
       transition: box-shadow .18s, transform .18s;
     }
-    .servizio-card:hover { box-shadow: 4px 8px 0 rgba(90,138,90,0.5); transform: translateY(-3px); }
+    .servizio-card:hover { box-shadow: 4px 8px 0 rgba(74,122,74,0.35); transform: translateY(-3px); }
     .servizio-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
     .servizio-nome { font-weight: 600; font-size: .98rem; margin-bottom: .2rem; color: var(--testo); }
     .servizio-det { font-size: .83rem; color: #777; line-height: 1.5; }
@@ -258,17 +258,18 @@
       display: inline-flex;
       align-items: center;
       gap: .5rem;
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.3);
-      border-radius: 50px;
+      background: #D4A843;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
       padding: .65rem 1.5rem;
       font-size: .92rem;
       font-weight: 500;
-      box-shadow: 0 6px 0 rgba(0,0,0,.25);
+      box-shadow: 3px 5px 0 #7a6116;
       transition: background .18s, transform .18s, box-shadow .18s;
     }
-    .reviews-link:hover  { background: rgba(255,255,255,.28); transform: translateY(-2px); box-shadow: 0 8px 0 rgba(0,0,0,.25); }
-    .reviews-link:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+    .reviews-link:hover  { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
+    .reviews-link:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 #7a6116; }
 
     /* ── FOOTER ──────────────────────────────────────────────────────────────── */
     footer {
