@@ -613,6 +613,18 @@ async function salvaPaziente() {
     titolo_studio:       document.getElementById('f-titolo-studio').value || null,
     stato_civile:        document.getElementById('f-stato-civile').value || null,
   };
+  // Validazione campi obbligatori
+  const erroriVal = [];
+  if (!body.telefono) erroriVal.push('Telefono obbligatorio');
+  if (!body.email) erroriVal.push('Email obbligatoria');
+  else if (!body.email.includes('@') || !/\.\w/.test(body.email)) erroriVal.push('Email non valida');
+  if (erroriVal.length) {
+    alert.innerHTML = `<div class="alert alert-error">${erroriVal.join(' · ')}</div>`;
+    btn.disabled = false; btn.textContent = 'Salva paziente';
+    document.querySelector('[data-tab="tab-contatti"]')?.click();
+    return;
+  }
+
   const cognomeLower = body.cognome.toLowerCase();
   const nomeLower    = body.nome.toLowerCase();
   const duplic = pazienti.find(p =>
