@@ -8,13 +8,6 @@
   <style>
     .home-body { min-height:100vh; background:var(--grigio-bg); padding-top:64px; }
     .home-content { padding:2rem 1.5rem; max-width:860px; margin:0 auto; }
-    .welcome-banner {
-      background:linear-gradient(135deg,var(--verde-scuro),var(--verde));
-      color:#fff; border-radius:var(--radius); padding:1.5rem 2rem;
-      margin-bottom:2rem; display:flex; align-items:center; justify-content:space-between;
-    }
-    .welcome-banner h2 { font-size:1.25rem; margin-bottom:.25rem; }
-    .welcome-banner p  { font-size:.88rem; opacity:.85; }
     .oggi-strip { background:#fff; border-radius:var(--radius); padding:1rem 1.5rem; margin-bottom:2rem;
                   box-shadow:4px 6px 0 rgba(74,122,74,.35); display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
     .oggi-label { font-size:.85rem; color:#888; }
@@ -29,7 +22,6 @@
       background:#fff;
       border-radius:var(--radius);
       box-shadow:4px 6px 0 rgba(74,122,74,.35);
-      border-top:4px solid transparent;
       padding:2rem 1.5rem;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap:.75rem; cursor:pointer; text-decoration:none; color:inherit;
@@ -47,6 +39,7 @@
     .modulo-card-lg[data-col="viola"]  { border-top-color: #8e44ad; }
     .modulo-card-lg[data-col="grigio"] { border-top-color: #95a5a6; }
     .modulo-card-lg.placeholder { opacity:.75; }
+    .modulo-card-lg .cal-svg { display:block; color:var(--grigio-testo); }
 
     @media (max-width:500px) {
       .moduli-4 { grid-template-columns:1fr; }
@@ -60,18 +53,14 @@
       <h1>Studio Orlandi</h1>
       <div class="subtitle" id="nome-medico-header"></div>
     </div>
+    <div class="header-actions">
+      <div id="data-oggi" style="font-size:.8rem;opacity:.85;text-align:right;line-height:1.35"></div>
+      <span style="font-size:1.6rem">🩺</span>
+    </div>
   </header>
 
   <div id="alert-home" style="position:fixed;top:1rem;right:1rem;z-index:999;min-width:240px"></div>
   <div class="home-content">
-    <div class="welcome-banner">
-      <div>
-        <h2>Benvenuto, <span id="welcome-name">Dottore</span></h2>
-        <p id="data-oggi"></p>
-      </div>
-      <span style="font-size:2.5rem">🩺</span>
-    </div>
-
     <div class="oggi-strip">
       <div>
         <div class="oggi-label">Appuntamenti oggi</div>
@@ -84,22 +73,31 @@
     </div>
 
     <div class="moduli-4">
-      <a href="/medico/anagrafica.html" class="modulo-card-lg" data-col="verde">
+      <a href="/medico/anagrafica.html" class="modulo-card-lg">
         <div class="m-icon">👥</div>
         <h3>Anagrafica</h3>
         <p>Gestione pazienti</p>
       </a>
-      <a href="/medico/calendario.html" class="modulo-card-lg" data-col="teal">
-        <div class="m-icon">📅</div>
+      <a href="/medico/calendario.html" class="modulo-card-lg">
+        <div class="m-icon">
+          <svg class="cal-svg" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
         <h3>Appuntamenti</h3>
         <p>Calendario e prenotazioni</p>
       </a>
-      <div class="modulo-card-lg placeholder" data-col="grigio" onclick="mostraModuloInArrivo()">
+      <div class="modulo-card-lg placeholder" onclick="mostraModuloInArrivo()">
         <div class="m-icon">🧬</div>
         <h3>dYagnosis</h3>
         <p>Modulo in arrivo</p>
       </div>
-      <a href="/medico/impostazioni.html" class="modulo-card-lg" data-col="viola">
+      <a href="/medico/impostazioni.html" class="modulo-card-lg">
         <div class="m-icon">⚙️</div>
         <h3>Impostazioni</h3>
         <p>Configurazione studio</p>
@@ -116,14 +114,14 @@
     }
 
     const oggi = new Date();
-    document.getElementById('data-oggi').textContent =
-      oggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('data-oggi').innerHTML =
+      oggi.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' })
+      + '<br>' + oggi.getFullYear();
 
     (async () => {
       try {
         const me = await api('/api/auth/me');
         document.getElementById('nome-medico-header').textContent = me.nome_medico;
-        document.getElementById('welcome-name').textContent = me.nome_medico.replace('Dott. ','').replace('Dott.ssa ','');
       } catch(e) {}
 
       try {
