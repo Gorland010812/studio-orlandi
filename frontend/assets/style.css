@@ -44,9 +44,9 @@ h3 { font-size: 1.1rem;  font-weight: 600; }
 .site-header h1 { font-size: 1.4rem; }
 .site-header .subtitle { font-size: .85rem; opacity: .85; margin-top: .15rem; }
 .header-actions { display: flex; gap: .75rem; align-items: center; }
-.site-header .btn-primary { background: #D4A843; color: #fff; border-radius: 8px; box-shadow: 3px 5px 0 #7a6116; }
+.site-header .btn-primary { background: #D4A843; color: #fff; border-radius: 6px; box-shadow: 3px 5px 0 #7a6116; }
 .site-header .btn-primary:hover  { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
-.site-header .btn-primary:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 #7a6116; }
+.site-header .btn-primary:active { transform: translateY(2px); box-shadow: 1px 3px 0 #7a6116; }
 
 /* ── Bottoni ────────────────────────────────────────────────────────────────── */
 .btn {
@@ -55,19 +55,19 @@ h3 { font-size: 1.1rem;  font-weight: 600; }
   font-size: .9rem; font-weight: 500; transition: all .18s;
   white-space: nowrap;
 }
-.btn-primary   { background: #D4A843; color: #fff; border-radius: 8px; box-shadow: 3px 5px 0 #7a6116; }
+.btn-primary   { background: #D4A843; color: #fff; border-radius: 6px; box-shadow: 3px 5px 0 #7a6116; }
 .btn-primary:hover  { background: #b8911f; transform: translateY(-2px); box-shadow: 3px 7px 0 #7a6116; }
-.btn-primary:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 #7a6116; }
+.btn-primary:active { transform: translateY(2px); box-shadow: 1px 3px 0 #7a6116; }
 .btn-secondary { background: var(--grigio-bg); color: var(--grigio-testo);
   border: 1px solid var(--grigio-bordo); box-shadow: 3px 5px 0 rgba(0,0,0,0.2); }
 .btn-secondary:hover  { background: #e9ecef; transform: translateY(-2px); box-shadow: 3px 7px 0 rgba(0,0,0,0.2); }
-.btn-secondary:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.2); }
+.btn-secondary:active { transform: translateY(2px); box-shadow: 1px 3px 0 rgba(0,0,0,0.2); }
 .btn-danger    { background: var(--rosso); color: #fff; box-shadow: 3px 5px 0 rgba(0,0,0,0.2); }
 .btn-danger:hover  { background: #a93226; transform: translateY(-2px); box-shadow: 3px 7px 0 rgba(0,0,0,0.2); }
-.btn-danger:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.2); }
+.btn-danger:active { transform: translateY(2px); box-shadow: 1px 3px 0 rgba(0,0,0,0.2); }
 .btn-ghost     { background: transparent; color: var(--verde); border: 1.5px solid var(--verde); box-shadow: 3px 5px 0 rgba(0,0,0,0.2); }
 .btn-ghost:hover  { background: var(--verde-chiaro); transform: translateY(-2px); box-shadow: 3px 7px 0 rgba(0,0,0,0.2); }
-.btn-ghost:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.2); }
+.btn-ghost:active { transform: translateY(2px); box-shadow: 1px 3px 0 rgba(0,0,0,0.2); }
 .btn-sm { padding: .35rem .85rem; font-size: .82rem; }
 .btn-lg { padding: .75rem 1.75rem; font-size: 1rem; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -283,7 +283,7 @@ h3 { font-size: 1.1rem;  font-weight: 600; }
   text-decoration: none; color: var(--grigio-testo);
 }
 .index-card:hover  { transform: translateY(-2px); box-shadow: 4px 8px 0 rgba(74,122,74,0.35); }
-.index-card:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 rgba(74,122,74,0.35); }
+.index-card:active { transform: translateY(2px); box-shadow: 1px 3px 0 rgba(74,122,74,0.35); }
 .index-card .card-icon { font-size: 3rem; margin-bottom: 1rem; }
 .index-card h2 { font-size: 1.3rem; margin-bottom: .5rem; color: var(--verde-scuro); }
 .index-card p  { font-size: .88rem; color: #666; }
@@ -297,7 +297,7 @@ h3 { font-size: 1.1rem;  font-weight: 600; }
   border-top: 4px solid transparent;
 }
 .modulo-card:hover  { transform: translateY(-2px); box-shadow: 4px 8px 0 rgba(74,122,74,.35); }
-.modulo-card:active { transform: translateY(3px) translateX(2px); box-shadow: 1px 1px 0 rgba(74,122,74,.35); }
+.modulo-card:active { transform: translateY(2px); box-shadow: 1px 3px 0 rgba(74,122,74,.35); }
 .modulo-card .m-icon { font-size: 2.2rem; margin-bottom: .75rem; }
 .modulo-card h3 { font-size: .95rem; }
 
