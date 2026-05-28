@@ -41,7 +41,35 @@
     .cal-list-info { flex:1; font-size:.88rem; }
     .cal-list-ora { font-size:.75rem; color:#888; }
     .cal-list-empty { padding:.6rem 1rem; font-size:.82rem; color:#bbb; border-top:1px solid var(--grigio-bordo); }
-    .cal-view-btn { display:none; }
+    .cal-view-btn { display:inline-flex; }
+    /* Vista settimanale */
+    .cal-week-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .cal-week-grid { display:grid; grid-template-columns:repeat(7, minmax(120px, 1fr)); gap:5px; min-width:600px; }
+    .cal-week-col { background:#fff; border-radius:var(--radius-sm); border:1px solid var(--grigio-bordo);
+                    display:flex; flex-direction:column; min-height:160px; }
+    .cal-week-col-hdr { padding:.45rem .35rem; text-align:center; background:var(--verde-chiaro);
+                        border-bottom:1px solid var(--grigio-bordo);
+                        border-radius:var(--radius-sm) var(--radius-sm) 0 0; }
+    .cal-week-col.oggi > .cal-week-col-hdr { background:var(--verde); }
+    .wk-dow { font-size:.68rem; text-transform:uppercase; letter-spacing:.04em; color:#888; font-weight:600; }
+    .cal-week-col.oggi > .cal-week-col-hdr .wk-dow { color:rgba(255,255,255,.8); }
+    .wk-dom { font-size:1.25rem; font-weight:700; color:var(--verde-scuro); line-height:1.2; }
+    .cal-week-col.oggi > .cal-week-col-hdr .wk-dom { color:#fff; }
+    .wk-mes { font-size:.68rem; color:#bbb; }
+    .cal-week-col.oggi > .cal-week-col-hdr .wk-mes { color:rgba(255,255,255,.65); }
+    .cal-week-events { padding:.3rem; display:flex; flex-direction:column; gap:.3rem; flex:1; }
+    .cal-week-event { border-radius:4px; padding:.28rem .45rem; cursor:pointer; font-size:.78rem;
+                      color:#fff; transition:filter .1s; overflow:hidden; }
+    .cal-week-event:hover { filter:brightness(.88); }
+    .wk-ev-ora  { font-size:.7rem; color:rgba(255,255,255,.8); }
+    .wk-ev-nome { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cal-week-add { border:none; background:none; width:100%; padding:.35rem; text-align:center;
+                    cursor:pointer; color:#ccc; font-size:.82rem;
+                    border-top:1px dashed var(--grigio-bordo);
+                    border-radius:0 0 var(--radius-sm) var(--radius-sm); }
+    .cal-week-add:hover { background:var(--verde-chiaro); color:var(--verde); }
+    .cal-week-col.no-disp  { opacity:.35; }
+    .cal-week-col.passato  { opacity:.35; }
     /* Fix 17: giorni senza ambulatorio */
     .cal-cell.no-disp { opacity:.38; background:#f9f9f9; cursor:default !important; }
     .cal-cell.no-disp:hover { background:#f9f9f9; }
@@ -96,12 +124,13 @@
     </div>
     <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
       <div class="cal-stats">
-        <div class="stat-item"><div class="stat-val" id="st-mese">—</div><div class="stat-lbl">questo mese</div></div>
+        <div class="stat-item"><div class="stat-val" id="st-mese">—</div><div class="stat-lbl" id="lbl-st-mese">questo mese</div></div>
         <div class="stat-item"><div class="stat-val" id="st-attesa">—</div><div class="stat-lbl">in attesa</div></div>
       </div>
-      <div class="cal-view-btn" style="gap:.4rem;display:none" id="view-toggle">
-        <button class="btn btn-secondary btn-sm active" id="btn-v-griglia" onclick="setVista('griglia')" title="Vista mese">📅</button>
-        <button class="btn btn-secondary btn-sm" id="btn-v-lista" onclick="setVista('lista')" title="Vista lista">☰</button>
+      <div class="cal-view-btn" style="gap:.4rem" id="view-toggle">
+        <button class="btn btn-secondary btn-sm active" id="btn-v-griglia" onclick="setVista('griglia')" title="Vista mese">Mese</button>
+        <button class="btn btn-secondary btn-sm" id="btn-v-settimana" onclick="setVista('settimana')" title="Vista settimana">Settimana</button>
+        <button class="btn btn-secondary btn-sm" id="btn-v-lista" onclick="setVista('lista')" title="Vista lista">Lista</button>
       </div>
     </div>
   </div>
@@ -118,6 +147,9 @@
       <div class="cal-day-header">Sab</div>
       <div class="cal-day-header">Dom</div>
     </div>
+  </div>
+  <div id="cal-week-wrap" class="hidden">
+    <div class="cal-week-grid" id="cal-week-grid"></div>
   </div>
   <div id="cal-list-wrap" class="hidden">
     <div class="cal-list" id="cal-list"></div>
@@ -215,14 +247,120 @@ function dataOggiISO() {
   return `${o.getFullYear()}-${String(o.getMonth()+1).padStart(2,'0')}-${String(o.getDate()).padStart(2,'0')}`;
 }
 
-/* ── Calendario ──────────────────────────────────────────────────────────── */
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getMondayOf(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+  d.setDate(d.getDate() - dow);
+  return d;
+}
+
+let lunedi = getMondayOf(new Date());
+
+function aggiornaTitle() {
+  if (vistaCorrente === 'settimana') {
+    const dom = new Date(lunedi); dom.setDate(dom.getDate() + 6);
+    const fD = d => `${d.getDate()} ${nomeMese(d.getMonth()).slice(0,3)}`;
+    document.getElementById('mese-title').textContent = `${fD(lunedi)} – ${fD(dom)} ${dom.getFullYear()}`;
+    document.getElementById('lbl-st-mese').textContent = 'questa settimana';
+  } else {
+    document.getElementById('mese-title').textContent = `${nomeMese(mese-1)} ${anno}`;
+    document.getElementById('lbl-st-mese').textContent = 'questo mese';
+  }
+}
+
+function ricaricaVista() {
+  if (vistaCorrente === 'settimana') caricaSettimana();
+  else caricaMese();
+}
+
+/* ── Calendario mensile ──────────────────────────────────────────────────── */
 async function caricaMese() {
-  document.getElementById('mese-title').textContent = `${nomeMese(mese-1)} ${anno}`;
+  aggiornaTitle();
   try {
     appuntamenti = await api(`/api/appuntamenti/mese/${anno}/${mese}`);
     if (vistaCorrente === 'lista') { renderLista(); } else { renderCalendario(); }
     aggiornaStats();
   } catch(e) {}
+}
+
+/* ── Calendario settimanale ──────────────────────────────────────────────── */
+async function caricaSettimana() {
+  aggiornaTitle();
+  try {
+    const dom = new Date(lunedi); dom.setDate(dom.getDate() + 6);
+    const y1 = lunedi.getFullYear(), m1 = lunedi.getMonth() + 1;
+    const y2 = dom.getFullYear(),    m2 = dom.getMonth() + 1;
+    let apps = await api(`/api/appuntamenti/mese/${y1}/${m1}`);
+    if (y1 !== y2 || m1 !== m2) {
+      const apps2 = await api(`/api/appuntamenti/mese/${y2}/${m2}`);
+      apps = [...apps, ...apps2];
+    }
+    const startISO = toISO(lunedi), endISO = toISO(dom);
+    appuntamenti = apps.filter(a => { const d = a.data_ora.slice(0,10); return d >= startISO && d <= endISO; });
+    renderSettimana();
+    aggiornaStats();
+  } catch(e) {}
+}
+
+function renderSettimana() {
+  const grid = document.getElementById('cal-week-grid');
+  grid.innerHTML = '';
+  const oggiISO = dataOggiISO();
+  const nomiBrevi = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lunedi); d.setDate(d.getDate() + i);
+    const dataStr  = toISO(d);
+    const isOggi   = dataStr === oggiISO;
+    const isPassato = dataStr < oggiISO;
+    const hasDisp  = dispSet.size === 0 || dispSet.has(i);
+    const col = document.createElement('div');
+    let cls = 'cal-week-col';
+    if (isOggi)    cls += ' oggi';
+    if (!hasDisp)  cls += ' no-disp';
+    if (isPassato) cls += ' passato';
+    col.className = cls;
+    // Intestazione giorno
+    const hdr = document.createElement('div');
+    hdr.className = 'cal-week-col-hdr';
+    hdr.innerHTML = `<div class="wk-dow">${nomiBrevi[i]}</div>
+      <div class="wk-dom">${d.getDate()}</div>
+      <div class="wk-mes">${nomeMese(d.getMonth()).slice(0,3)}</div>`;
+    if (!isPassato && hasDisp) {
+      hdr.style.cursor = 'pointer';
+      hdr.addEventListener('click', e => apriSlotPopup(dataStr, hdr, e));
+    }
+    col.appendChild(hdr);
+    // Lista appuntamenti
+    const eventsEl = document.createElement('div');
+    eventsEl.className = 'cal-week-events';
+    const appGiorno = appuntamenti
+      .filter(a => a.data_ora.startsWith(dataStr))
+      .sort((a, b) => a.data_ora.localeCompare(b.data_ora));
+    appGiorno.forEach(a => {
+      const ev = document.createElement('div');
+      ev.className = 'cal-week-event';
+      ev.style.background = a.tipo_visita_colore || '#6a9e6a';
+      ev.innerHTML = `<div class="wk-ev-ora">${a.data_ora.slice(11,16)}</div>
+        <div class="wk-ev-nome">${a.nome_display}</div>`;
+      ev.addEventListener('click', e => { e.stopPropagation(); apriModifica(a.id); });
+      eventsEl.appendChild(ev);
+    });
+    col.appendChild(eventsEl);
+    // Pulsante aggiungi
+    if (!isPassato && hasDisp) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'cal-week-add';
+      addBtn.textContent = '+ Aggiungi';
+      addBtn.addEventListener('click', () => apriNuovo(dataStr));
+      col.appendChild(addBtn);
+    }
+    grid.appendChild(col);
+  }
 }
 
 function renderCalendario() {
@@ -614,7 +752,7 @@ document.getElementById('btn-salva-app').addEventListener('click', async () => {
       await api('/api/appuntamenti', { method:'POST', body:JSON.stringify(body) });
     }
     closeModal('modal-nuovo');
-    caricaMese();
+    ricaricaVista();
   } catch(e) { alertM.innerHTML=`<div class="alert alert-error">${e.message}</div>`; }
 });
 
@@ -623,7 +761,7 @@ document.getElementById('btn-elimina-app').addEventListener('click', async () =>
   try {
     await api(`/api/appuntamenti/${appCorrenteId}`, { method:'DELETE' });
     closeModal('modal-nuovo');
-    caricaMese();
+    ricaricaVista();
   } catch(e) { alert(e.message); }
 });
 
@@ -632,11 +770,14 @@ let vistaCorrente = 'griglia';
 
 function setVista(v) {
   vistaCorrente = v;
-  document.getElementById('cal-grid-wrap').classList.toggle('hidden', v === 'lista');
-  document.getElementById('cal-list-wrap').classList.toggle('hidden', v === 'griglia');
-  document.getElementById('btn-v-griglia').classList.toggle('active', v === 'griglia');
-  document.getElementById('btn-v-lista').classList.toggle('active', v === 'lista');
-  if (v === 'lista') renderLista();
+  document.getElementById('cal-grid-wrap').classList.toggle('hidden',  v !== 'griglia');
+  document.getElementById('cal-week-wrap').classList.toggle('hidden',  v !== 'settimana');
+  document.getElementById('cal-list-wrap').classList.toggle('hidden',  v !== 'lista');
+  document.getElementById('btn-v-griglia').classList.toggle('active',  v === 'griglia');
+  document.getElementById('btn-v-settimana').classList.toggle('active',v === 'settimana');
+  document.getElementById('btn-v-lista').classList.toggle('active',    v === 'lista');
+  if (v === 'settimana') caricaSettimana();
+  else caricaMese();
 }
 
 function renderLista() {
@@ -695,15 +836,27 @@ function renderLista() {
   }
 }
 
-/* ── Nav mese ─────────────────────────────────────────────────────────────── */
+/* ── Nav ──────────────────────────────────────────────────────────────────── */
 document.getElementById('btn-prev-m').addEventListener('click', () => {
-  mese--; if (mese<1){ mese=12; anno--; } caricaMese();
+  if (vistaCorrente === 'settimana') {
+    lunedi = new Date(lunedi); lunedi.setDate(lunedi.getDate() - 7); caricaSettimana();
+  } else {
+    mese--; if (mese<1){ mese=12; anno--; } caricaMese();
+  }
 });
 document.getElementById('btn-next-m').addEventListener('click', () => {
-  mese++; if (mese>12){ mese=1; anno++; } caricaMese();
+  if (vistaCorrente === 'settimana') {
+    lunedi = new Date(lunedi); lunedi.setDate(lunedi.getDate() + 7); caricaSettimana();
+  } else {
+    mese++; if (mese>12){ mese=1; anno++; } caricaMese();
+  }
 });
 document.getElementById('btn-oggi').addEventListener('click', () => {
-  anno=new Date().getFullYear(); mese=new Date().getMonth()+1; caricaMese();
+  if (vistaCorrente === 'settimana') {
+    lunedi = getMondayOf(new Date()); caricaSettimana();
+  } else {
+    anno=new Date().getFullYear(); mese=new Date().getMonth()+1; caricaMese();
+  }
 });
 // Fix 8: pulsante header apre modal con data odierna
 document.getElementById('btn-nuovo-hdr').addEventListener('click', () => apriNuovo(dataOggiISO()));
@@ -712,10 +865,11 @@ document.getElementById('btn-nuovo-hdr').addEventListener('click', () => apriNuo
 initModalClose();
 
 if (window.matchMedia('(max-width: 768px)').matches) {
-  document.getElementById('view-toggle').style.display = 'flex';
-  setVista('lista');
-} else {
-  document.getElementById('view-toggle').style.display = 'none';
+  vistaCorrente = 'lista';
+  document.getElementById('cal-grid-wrap').classList.add('hidden');
+  document.getElementById('cal-list-wrap').classList.remove('hidden');
+  document.getElementById('btn-v-griglia').classList.remove('active');
+  document.getElementById('btn-v-lista').classList.add('active');
 }
 
 (async () => {
