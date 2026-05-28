@@ -154,7 +154,13 @@
       <div class="form-section">
         <h4>Dati anagrafici</h4>
         <div class="form-row">
-          <div class="form-group"><label>Cognome *</label><input id="f-pax-cognome" required autocomplete="new-password"></div>
+          <div class="form-group">
+            <label>Cognome *</label>
+            <div class="autocomplete-wrap">
+              <input id="f-pax-cognome" required autocomplete="new-password">
+              <div class="autocomplete-list hidden" id="list-pax-cognome"></div>
+            </div>
+          </div>
           <div class="form-group"><label>Nome *</label><input id="f-pax-nome" required autocomplete="new-password"></div>
         </div>
         <div class="form-row">
@@ -461,6 +467,72 @@ function renderScheda(p) {
       document.getElementById('f-cap').value = c.cap || '';
       abilitaSalva();
     }
+  });
+
+  // Autocomplete cognome → cerca paziente esistente
+  const inputCognome = document.getElementById('f-pax-cognome');
+  const listCognome  = document.getElementById('list-pax-cognome');
+  let paxSuggeriti = [];
+  let paxFocusIdx  = -1;
+
+  function renderPaxSuggeriti() {
+    listCognome.innerHTML = '';
+    paxFocusIdx = -1;
+    if (!paxSuggeriti.length) { listCognome.classList.add('hidden'); return; }
+    paxSuggeriti.forEach((px) => {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.textContent = `${px.cognome} ${px.nome}${px.data_nascita ? ' · ' + fmtData(px.data_nascita) : ''}`;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        listCognome.classList.add('hidden'); paxSuggeriti = [];
+        apriPaziente(px.id);
+      });
+      item.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        listCognome.classList.add('hidden'); paxSuggeriti = [];
+        apriPaziente(px.id);
+        inputCognome.blur();
+      }, { passive: false });
+      listCognome.appendChild(item);
+    });
+    listCognome.classList.remove('hidden');
+  }
+
+  function aggiornaPaxFocus(idx) {
+    const items = listCognome.querySelectorAll('.autocomplete-item');
+    items.forEach(el => el.classList.remove('ac-focused'));
+    paxFocusIdx = Math.max(-1, Math.min(idx, items.length - 1));
+    if (paxFocusIdx >= 0) {
+      items[paxFocusIdx].classList.add('ac-focused');
+      items[paxFocusIdx].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  inputCognome.addEventListener('input', async () => {
+    const q = inputCognome.value.trim();
+    if (q.length < 2) { paxSuggeriti = []; listCognome.classList.add('hidden'); return; }
+    try {
+      const res = await api(`/api/pazienti/cerca?q=${encodeURIComponent(q)}`);
+      paxSuggeriti = (res.pazienti || res).filter(px => px.id !== pazienteCorrente?.id);
+      renderPaxSuggeriti();
+    } catch(e) { paxSuggeriti = []; listCognome.classList.add('hidden'); }
+  });
+
+  inputCognome.addEventListener('keydown', (e) => {
+    if (listCognome.classList.contains('hidden')) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); aggiornaPaxFocus(paxFocusIdx + 1); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); aggiornaPaxFocus(paxFocusIdx - 1); }
+    if (e.key === 'Enter' && paxFocusIdx >= 0) {
+      e.preventDefault();
+      const px = paxSuggeriti[paxFocusIdx];
+      if (px) { listCognome.classList.add('hidden'); paxSuggeriti = []; apriPaziente(px.id); }
+    }
+    if (e.key === 'Escape') { listCognome.classList.add('hidden'); paxSuggeriti = []; }
+  });
+
+  inputCognome.addEventListener('blur', () => {
+    setTimeout(() => listCognome.classList.add('hidden'), 250);
   });
 
   // CF auto
