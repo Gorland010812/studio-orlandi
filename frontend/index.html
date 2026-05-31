@@ -458,6 +458,8 @@ function hideLoader() {
     heroItems.forEach(txt => {
       const li = document.createElement('li');
       li.textContent = txt;
+      li.style.textAlign = 'left';
+      li.style.justifyContent = 'flex-start';
       presEl.appendChild(li);
     });
 
