@@ -94,6 +94,7 @@
       opacity: .88;
       margin-bottom: 1.6rem;
       font-weight: 400;
+      white-space: pre-line;
     }
     .hero-prestazioni {
       list-style: none;
@@ -297,7 +298,8 @@
       .hero-logo { display: none; }
       .hero-foto-wrap { order: -1; display: flex; justify-content: center; }
       .hero-foto, .hero-foto-empty { width: 160px; height: 210px; }
-      .hero-prestazioni li { justify-content: center; }
+      .hero-prestazioni { text-align: left; }
+      .hero-prestazioni li { justify-content: flex-start; }
       .chisono-layout { grid-template-columns: 1fr; }
       .section-title::before, .section-title::after { display: none; }
     }
@@ -435,7 +437,7 @@ function hideLoader() {
       const lines = imp.specializzazioni.split('\n')
         .map(s => s.replace(/^[-–—·•]\s*/, '').trim())
         .filter(Boolean);
-      if (lines.length) document.getElementById('hero-titolo').textContent = lines.slice(0, 3).join(' · ');
+      if (lines.length) document.getElementById('hero-titolo').textContent = lines.slice(0, 3).join('\n');
     }
 
     /* ── Hero: elenco prestazioni (prime 3) ── */
