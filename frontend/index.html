@@ -94,7 +94,6 @@
       opacity: .88;
       margin-bottom: 1.6rem;
       font-weight: 400;
-      white-space: pre-line;
     }
     .hero-prestazioni {
       list-style: none;
@@ -308,6 +307,8 @@
       section { padding: 3rem 1.25rem; }
       .hero { padding: 2.5rem 1.25rem 3rem; }
       .hero-nome { font-size: 1.45rem; }
+      .hero-prestazioni { text-align: left; }
+      .hero-prestazioni li { justify-content: flex-start; }
     }
   </style>
 </head>
@@ -437,7 +438,14 @@ function hideLoader() {
       const lines = imp.specializzazioni.split('\n')
         .map(s => s.replace(/^[-–—·•]\s*/, '').trim())
         .filter(Boolean);
-      if (lines.length) document.getElementById('hero-titolo').textContent = lines.slice(0, 3).join('\n');
+      if (lines.length) {
+        const el = document.getElementById('hero-titolo');
+        el.innerHTML = '';
+        lines.slice(0, 3).forEach((line, i) => {
+          if (i > 0) el.appendChild(document.createElement('br'));
+          el.appendChild(document.createTextNode(line));
+        });
+      }
     }
 
     /* ── Hero: elenco prestazioni (prime 3) ── */
